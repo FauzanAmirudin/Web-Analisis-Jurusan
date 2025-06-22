@@ -44,16 +44,29 @@ class AuthController extends BaseController
         $password = $this->request->getPost('password');
         $remember = $this->request->getPost('remember');
 
+        // Debug login attempt
+        log_message('debug', 'Login attempt for: ' . $login);
+
         // Check if login is email or username
         $user = filter_var($login, FILTER_VALIDATE_EMAIL) 
             ? $this->userModel->findByEmail($login)
             : $this->userModel->findByUsername($login);
 
-        if (!$user || !$this->userModel->verifyPassword($password, $user['password'])) {
+        if (!$user) {
+            log_message('debug', 'Login failed: User not found');
+            return redirect()->back()->withInput()->with('error', 'Email/Username atau password salah');
+        }
+
+        // Debug password verification
+        log_message('debug', 'Verifying password for user ID: ' . $user['id']);
+        
+        if (!$this->userModel->verifyPassword($password, $user['password'])) {
+            log_message('debug', 'Login failed: Password verification failed');
             return redirect()->back()->withInput()->with('error', 'Email/Username atau password salah');
         }
 
         if (!$user['is_active']) {
+            log_message('debug', 'Login failed: Account not active');
             return redirect()->back()->withInput()->with('error', 'Akun Anda tidak aktif');
         }
 
@@ -64,8 +77,12 @@ class AuthController extends BaseController
             'email' => $user['email'],
             'full_name' => $user['full_name'],
             'profile_picture' => $user['profile_picture'],
+            'phone_number' => $user['phone_number'],
+            'birth_date' => $user['birth_date'],
             'logged_in' => true
         ]);
+
+        log_message('debug', 'Login successful for user ID: ' . $user['id']);
 
         // Set remember me cookie
         if ($remember) {
@@ -103,24 +120,41 @@ class AuthController extends BaseController
             'email' => 'required|valid_email|is_unique[users.email]',
             'password' => 'required|min_length[6]',
             'password_confirm' => 'required|matches[password]',
-            'full_name' => 'required|min_length[2]|max_length[100]'
+            'full_name' => 'required|min_length[2]|max_length[100]',
+            'phone_number' => 'required|min_length[10]|max_length[20]',
+            'birth_date' => 'required|valid_date'
         ];
 
+        // Clear any previous error messages
+        session()->remove('errors');
+        
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->back()->withInput()
+                             ->with('error', 'Terdapat kesalahan pada data yang dimasukkan')
+                             ->with('errors', $this->validator->getErrors());
         }
 
         $data = [
             'username' => $this->request->getPost('username'),
             'email' => $this->request->getPost('email'),
             'password' => $this->request->getPost('password'),
-            'full_name' => $this->request->getPost('full_name')
+            'full_name' => $this->request->getPost('full_name'),
+            'phone_number' => $this->request->getPost('phone_number'),
+            'birth_date' => $this->request->getPost('birth_date')
         ];
 
-        if ($this->userModel->insert($data)) {
-            return redirect()->to('/auth/login')->with('success', 'Registrasi berhasil! Silakan login.');
-        } else {
-            return redirect()->back()->withInput()->with('error', 'Registrasi gagal. Silakan coba lagi.');
+        try {
+            if ($this->userModel->insert($data)) {
+                return redirect()->to('/auth/login')
+                                ->with('success', 'Registrasi berhasil! Silakan login.');
+            } else {
+                return redirect()->back()->withInput()
+                                ->with('error', 'Registrasi gagal. Silakan coba lagi.');
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Registration error: ' . $e->getMessage());
+            return redirect()->back()->withInput()
+                            ->with('error', 'Terjadi kesalahan. Silakan coba lagi atau hubungi administrator.');
         }
     }
 

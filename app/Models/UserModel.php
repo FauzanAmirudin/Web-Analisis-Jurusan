@@ -14,7 +14,8 @@ class UserModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'username', 'email', 'password', 'full_name', 
-        'profile_picture', 'is_active', 'last_login_at'
+        'profile_picture', 'is_active', 'last_login_at',
+        'phone_number', 'birth_date'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -27,10 +28,12 @@ class UserModel extends Model
 
     // Validation
     protected $validationRules = [
-        'username'  => 'required|min_length[3]|max_length[50]|is_unique[users.username]',
-        'email'     => 'required|valid_email|is_unique[users.email]',
-        'password'  => 'required|min_length[6]',
-        'full_name' => 'required|min_length[2]|max_length[100]'
+        'username'     => 'required|min_length[3]|max_length[50]|is_unique[users.username]',
+        'email'        => 'required|valid_email|is_unique[users.email]',
+        'password'     => 'required|min_length[6]',
+        'full_name'    => 'required|min_length[2]|max_length[100]',
+        'phone_number' => 'permit_empty|min_length[10]|max_length[20]',
+        'birth_date'   => 'permit_empty|valid_date'
     ];
 
     protected $validationMessages = [
@@ -53,6 +56,13 @@ class UserModel extends Model
             'required'    => 'Nama lengkap harus diisi',
             'min_length'  => 'Nama lengkap minimal 2 karakter',
             'max_length'  => 'Nama lengkap maksimal 100 karakter'
+        ],
+        'phone_number' => [
+            'min_length'  => 'Nomor telepon minimal 10 digit',
+            'max_length'  => 'Nomor telepon maksimal 20 digit'
+        ],
+        'birth_date' => [
+            'valid_date'  => 'Format tanggal lahir tidak valid'
         ]
     ];
 
@@ -67,7 +77,19 @@ class UserModel extends Model
     protected function hashPassword(array $data)
     {
         if (isset($data['data']['password'])) {
-            $data['data']['password'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
+            $plainPassword = $data['data']['password'];
+            $data['data']['password'] = password_hash($plainPassword, PASSWORD_DEFAULT);
+            
+            // Debug log
+            log_message('debug', 'Password hashed in UserModel::hashPassword');
+            
+            // Verify the hash works immediately
+            $newHash = $data['data']['password'];
+            if (!password_verify($plainPassword, $newHash)) {
+                log_message('error', 'Password hash verification failed in UserModel::hashPassword');
+            } else {
+                log_message('debug', 'Password hash verified in UserModel::hashPassword');
+            }
         }
         return $data;
     }
@@ -84,7 +106,9 @@ class UserModel extends Model
 
     public function verifyPassword($password, $hash)
     {
-        return password_verify($password, $hash);
+        $result = password_verify($password, $hash);
+        log_message('debug', 'Password verification result: ' . ($result ? 'success' : 'failed'));
+        return $result;
     }
 
     public function updateLastLogin($userId)

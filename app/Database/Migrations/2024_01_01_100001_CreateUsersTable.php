@@ -37,6 +37,15 @@ class CreateUsersTable extends Migration
                 'constraint' => 255,
                 'null'       => true,
             ],
+            'phone_number' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 20,
+                'null'       => true,
+            ],
+            'birth_date' => [
+                'type'       => 'DATE',
+                'null'       => true,
+            ],
             'is_active' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,

@@ -140,61 +140,183 @@ class DashboardController extends BaseController
 
     public function updateProfile()
     {
+        helper(['form']);
         $userId = session()->get('user_id');
         
-        $rules = [
-            'full_name' => 'required|min_length[2]|max_length[100]',
-            'email' => "required|valid_email|is_unique[users.email,id,$userId]"
-        ];
+        // Debug output
+        log_message('debug', '================ START UPDATE PROFILE ================');
+        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
+        log_message('debug', 'FILES data: ' . json_encode($this->request->getFiles()));
+        
+        // Handle profile picture upload first (separate from other profile updates)
+        $profilePicture = $this->request->getFile('profile_picture');
+        if ($profilePicture && $profilePicture->isValid() && !$profilePicture->hasMoved()) {
+            log_message('debug', 'Processing profile picture upload');
+            
+            // Create directory if it doesn't exist
+            $uploadPath = FCPATH . 'uploads/profiles';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            
+            $newName = $profilePicture->getRandomName();
+            if ($profilePicture->move($uploadPath, $newName)) {
+                // Update only the profile picture
+                $this->userModel->update($userId, ['profile_picture' => $newName]);
+                session()->set('profile_picture', $newName);
+                log_message('debug', 'Profile picture updated successfully: ' . $newName);
+                return redirect()->back()->with('success', 'Foto profil berhasil diperbarui');
+            } else {
+                log_message('error', 'Failed to move uploaded file');
+                return redirect()->back()->with('error', 'Gagal mengupload foto profil');
+            }
+        }
+        
+        // Check if this is a regular form submission (not file upload)
+        if (!$this->request->getPost('is_profile_update')) {
+            log_message('debug', 'No profile update form data submitted');
+            return redirect()->back();
+        }
+        
+        // If we get here, this is a regular form submission, not a file upload
+        log_message('debug', 'Processing profile data update');
+        
+        // Get current user data to compare with submitted data
+        $currentUser = $this->userModel->find($userId);
+        
+        // Prepare data and rules arrays
+        $data = [];
+        $rules = [];
+        
+        // Check which fields have been changed and add them to data and rules
+        $fullName = $this->request->getPost('full_name');
+        if ($fullName !== $currentUser['full_name']) {
+            $data['full_name'] = $fullName;
+            $rules['full_name'] = 'required|min_length[2]|max_length[100]';
+            log_message('debug', 'Full name changed: ' . $fullName);
+        }
+        
+        $email = $this->request->getPost('email');
+        if ($email !== $currentUser['email']) {
+            $data['email'] = $email;
+            $rules['email'] = "required|valid_email|is_unique[users.email,id,$userId]";
+            log_message('debug', 'Email changed: ' . $email);
+        }
+        
+        $phoneNumber = $this->request->getPost('phone_number');
+        if ($phoneNumber !== $currentUser['phone_number']) {
+            $data['phone_number'] = $phoneNumber;
+            $rules['phone_number'] = 'permit_empty|min_length[10]|max_length[20]';
+            log_message('debug', 'Phone number changed: ' . $phoneNumber);
+        }
+        
+        $birthDate = $this->request->getPost('birth_date');
+        if ($birthDate !== $currentUser['birth_date']) {
+            $data['birth_date'] = $birthDate ?: null;
+            $rules['birth_date'] = 'permit_empty|valid_date';
+            log_message('debug', 'Birth date changed: ' . $birthDate);
+        }
 
-        // Tambah validasi jika ingin ganti password
+        // Handle password change if requested
         if ($this->request->getPost('current_password')) {
             $rules['current_password'] = 'required';
             $rules['new_password'] = 'required|min_length[6]';
             $rules['confirm_password'] = 'required|matches[new_password]';
+            log_message('debug', 'Password change requested');
         }
 
-        if (!$this->validate($rules)) {
+        // If no data to update, redirect back with message
+        if (empty($data) && !$this->request->getPost('current_password')) {
+            log_message('debug', 'No data changed, nothing to update');
+            return redirect()->back()->with('info', 'Tidak ada perubahan yang dilakukan');
+        }
+
+        // Validate only the fields that have changed
+        if (!empty($rules) && !$this->validate($rules)) {
+            log_message('debug', 'Validation failed: ' . json_encode($this->validator->getErrors()));
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $data = [
-            'full_name' => $this->request->getPost('full_name'),
-            'email' => $this->request->getPost('email')
-        ];
-
-        // Proses ganti password jika diisi
+        // Process password change if requested
         if ($this->request->getPost('current_password')) {
             $user = $this->userModel->find($userId);
             if (!$this->userModel->verifyPassword($this->request->getPost('current_password'), $user['password'])) {
+                log_message('debug', 'Current password verification failed');
                 return redirect()->back()->withInput()->with('error', 'Password saat ini tidak sesuai');
             }
-            $data['password'] = $this->request->getPost('new_password');
+            
+            // Get the new password
+            $newPassword = $this->request->getPost('new_password');
+            
+            // Hash the password manually (don't rely on model callbacks for updates)
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            log_message('debug', 'Password hashed for update: ' . substr($hashedPassword, 0, 10) . '...');
+            
+            // Add to data array - use direct DB update to bypass model callbacks
+            $db = \Config\Database::connect();
+            try {
+                // Update password directly in the database
+                $result = $db->table('users')
+                    ->where('id', $userId)
+                    ->update(['password' => $hashedPassword]);
+                
+                if ($result) {
+                    log_message('debug', 'Password updated successfully via direct DB update');
+                    return redirect()->back()->with('success', 'Password berhasil diperbarui');
+                } else {
+                    log_message('error', 'Failed to update password via direct DB update');
+                    return redirect()->back()->with('error', 'Gagal memperbarui password');
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'Exception during direct password update: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui password: ' . $e->getMessage());
+            }
         }
 
-        // Handle profile picture upload
-        $profilePicture = $this->request->getFile('profile_picture');
-        if ($profilePicture && $profilePicture->isValid() && !$profilePicture->hasMoved()) {
-            $newName = $profilePicture->getRandomName();
-            if ($profilePicture->move(WRITEPATH . 'uploads/profiles', $newName)) {
-                $data['profile_picture'] = $newName;
+        try {
+            // Only update if there's data to update
+            if (!empty($data)) {
+                log_message('debug', 'Updating user with ID: ' . $userId . ' with data: ' . json_encode($data));
+                
+                // Special handling for password updates
+                if (isset($data['password'])) {
+                    log_message('debug', 'Password update detected, ensuring it is properly handled');
+                    
+                    // Double check the password is properly hashed
+                    if (strlen($data['password']) < 60 || !str_starts_with($data['password'], '$2y$')) {
+                        log_message('error', 'Password appears to be unhashed or improperly hashed');
+                        return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses password');
             }
         }
 
         if ($this->userModel->update($userId, $data)) {
-            // Update session data
-            session()->set([
-                'full_name' => $data['full_name'],
-                'email' => $data['email']
-            ]);
-
-            if (isset($data['profile_picture'])) {
-                session()->set('profile_picture', $data['profile_picture']);
-            }
-
+                    // Update session data for changed fields
+                    foreach ($data as $key => $value) {
+                        if ($key !== 'password') {
+                            session()->set($key, $value);
+                        }
+                    }
+                    
+                    // If password was updated, show specific message
+                    if (isset($data['password'])) {
+                        log_message('debug', 'Password updated successfully');
+                        return redirect()->back()->with('success', 'Password berhasil diperbarui');
+                    }
+                    
+                    log_message('debug', 'Profile updated successfully');
             return redirect()->back()->with('success', 'Profil berhasil diperbarui');
         } else {
-            return redirect()->back()->with('error', 'Gagal memperbarui profil');
+                    log_message('error', 'Failed to update profile: ' . json_encode($this->userModel->errors()));
+                    return redirect()->back()->with('error', 'Gagal memperbarui profil: ' . implode(', ', $this->userModel->errors()));
+                }
+            } else {
+                // If only password was changed (this should not happen anymore)
+                log_message('debug', 'No data to update but password change was requested');
+                return redirect()->back()->with('info', 'Tidak ada perubahan yang dilakukan');
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Exception during profile update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
