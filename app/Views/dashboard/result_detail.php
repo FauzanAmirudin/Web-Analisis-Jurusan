@@ -19,7 +19,7 @@
                 Diselesaikan pada <?= date('d F Y, H:i', strtotime($result['created_at'])) ?> WIB
             </p>
             <div class="flex justify-center space-x-4 mt-6">
-                <a href="<?= site_url('dashboard/history/pdf/'.$result['id']) ?>" 
+                <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $result['id'] ?>)" 
                    class="bg-yellow-400 text-gray-900 px-6 py-2 rounded-lg font-medium hover:bg-yellow-300 transition duration-200">
                     <i class="fas fa-download mr-2"></i>Download PDF
                 </a>
@@ -169,4 +169,21 @@
         </div>
     </div>
 </div>
-<?= $this->endSection() ?> 
+<!-- PDF Loading Spinner -->
+<div id="pdfLoadingSpinner" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 shadow-xl">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <span class="text-gray-700 font-medium">Menyiapkan PDF...</span>
+        </div>
+    </div>
+</div>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<!-- Include PDF generation libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="<?= base_url('js/generate-pdf.js') ?>"></script>
+<?= $this->endSection() ?>

@@ -29,7 +29,7 @@
                 <?php if ($question_type === 'riasec'): ?>
                     Pertanyaan RIASEC: <?= ($current_step - 1) * 6 + 1 ?> - <?= min($current_step * 6, 36) ?> dari 36
                 <?php else: ?>
-                    Pertanyaan MBTI: <?= 36 + (($current_step - 7) * 4) + 1 ?> - <?= 36 + (($current_step - 6) * 4) ?> dari 52
+                    Pertanyaan MBTI: <?= 36 + (($current_step - 7) * 8) + 1 ?> - <?= 36 + (($current_step - 6) * 8) ?> dari 16
                 <?php endif; ?>
             </div> -->
         </div>
@@ -295,8 +295,32 @@ function saveDraft() {
 function goToPreviousStep() {
     // Set intentional navigation flag
     window.isIntentionalNavigation = true;
-    // Implement navigation to previous step if needed
-    window.history.back();
+    
+    // Show loading
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    
+    const formData = new FormData(document.getElementById('testForm'));
+    
+    fetch('/test/previous', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            window.isIntentionalNavigation = false; // Reset flag if there's an error
+            alert('Terjadi kesalahan: ' + data.message);
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Navigation error:', error);
+        window.isIntentionalNavigation = false; // Reset flag if there's an error
+        alert('Terjadi kesalahan saat navigasi. Silakan coba lagi.');
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    });
 }
 
 // Prevent accidental page refresh, but allow intentional navigation

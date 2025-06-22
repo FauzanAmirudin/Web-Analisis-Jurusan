@@ -83,7 +83,7 @@
                                     <a href="<?= site_url('dashboard/history/'.$item['id']) ?>" class="text-primary hover:text-red-800">
                                         <i class="fas fa-eye"></i> Lihat
                                     </a>
-                                    <a href="<?= site_url('dashboard/history/pdf/'.$item['id']) ?>" class="text-gray-600 hover:text-gray-900 ml-3">
+                                    <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $item['id'] ?>)" class="text-gray-600 hover:text-gray-900 ml-3">
                                         <i class="fas fa-download"></i> PDF
                                     </a>
                                     <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
@@ -122,7 +122,7 @@
                         <a href="<?= site_url('dashboard/history/'.$item['id']) ?>" class="flex items-center text-primary hover:text-red-800">
                             <i class="fas fa-eye mr-1"></i> <span>Lihat</span>
                         </a>
-                        <a href="<?= site_url('dashboard/history/pdf/'.$item['id']) ?>" class="flex items-center text-gray-600 hover:text-gray-900">
+                        <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $item['id'] ?>)" class="flex items-center text-gray-600 hover:text-gray-900">
                             <i class="fas fa-download mr-1"></i> <span>PDF</span>
                         </a>
                         <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
@@ -215,9 +215,24 @@
     </div>
 </div>
 
+<!-- PDF Loading Spinner -->
+<div id="pdfLoadingSpinner" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 shadow-xl">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <span class="text-gray-700 font-medium">Menyiapkan PDF...</span>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<!-- Include PDF generation libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="<?= base_url('js/generate-pdf.js') ?>"></script>
+
 <script>
     // Define Alpine.js component
     document.addEventListener('alpine:init', () => {

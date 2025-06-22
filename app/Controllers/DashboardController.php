@@ -112,16 +112,35 @@ class DashboardController extends BaseController
     {
         $userId = session()->get('user_id');
         $result = $this->testResultModel->getResultById($resultId);
-
+        
         if (!$result || $result['user_id'] != $userId) {
             return redirect()->to('/dashboard/history')->with('error', 'Hasil tes tidak ditemukan');
         }
-
+        
+        // Decode JSON fields if needed
+        if (isset($result['strengths']) && is_string($result['strengths'])) {
+            $result['strengths'] = json_decode($result['strengths'], true);
+        }
+        
+        if (isset($result['development_areas']) && is_string($result['development_areas'])) {
+            $result['development_areas'] = json_decode($result['development_areas'], true);
+        }
+        
+        if (isset($result['recommended_majors']) && is_string($result['recommended_majors'])) {
+            $result['recommended_majors'] = json_decode($result['recommended_majors'], true);
+        }
+        
         $data = [
-            'title' => 'Hasil Tes - Analisis Jurusan',
+            'title' => 'Detail Hasil Tes - Analisis Jurusan',
             'result' => $result
         ];
-
+        
+        // Check if this is a PDF request (for html2canvas)
+        if ($this->request->getGet('pdf') === 'true') {
+            // Return just the content for PDF generation
+            return view('dashboard/result_detail_pdf', $data);
+        }
+        
         return view('dashboard/result_detail', $data);
     }
 
@@ -286,10 +305,10 @@ class DashboardController extends BaseController
                     if (strlen($data['password']) < 60 || !str_starts_with($data['password'], '$2y$')) {
                         log_message('error', 'Password appears to be unhashed or improperly hashed');
                         return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses password');
-            }
-        }
+                    }
+                }
 
-        if ($this->userModel->update($userId, $data)) {
+                if ($this->userModel->update($userId, $data)) {
                     // Update session data for changed fields
                     foreach ($data as $key => $value) {
                         if ($key !== 'password') {
@@ -304,8 +323,8 @@ class DashboardController extends BaseController
                     }
                     
                     log_message('debug', 'Profile updated successfully');
-            return redirect()->back()->with('success', 'Profil berhasil diperbarui');
-        } else {
+                    return redirect()->back()->with('success', 'Profil berhasil diperbarui');
+                } else {
                     log_message('error', 'Failed to update profile: ' . json_encode($this->userModel->errors()));
                     return redirect()->back()->with('error', 'Gagal memperbarui profil: ' . implode(', ', $this->userModel->errors()));
                 }

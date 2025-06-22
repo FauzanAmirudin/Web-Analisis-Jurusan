@@ -61,7 +61,7 @@ class AssessmentController extends BaseController
         }
 
         $currentStep = $session['current_step'];
-        $totalSteps = 13; // 6 RIASEC + 4 MBTI + 3 additional steps for better UX
+        $totalSteps = 11; // 6 RIASEC + 2 MBTI + 3 additional steps for better UX
 
         // Determine question type and range
         if ($currentStep <= 6) {
@@ -71,11 +71,11 @@ class AssessmentController extends BaseController
             $startNumber = ($currentStep - 1) * 6 + 1;
             $endNumber = $currentStep * 6;
         } else {
-            // MBTI questions (4 per page)
+            // MBTI questions (8 per page)
             $type = 'mbti';
-            $questionsPerPage = 4;
-            $startNumber = 36 + (($currentStep - 7) * 4) + 1;
-            $endNumber = 36 + (($currentStep - 6) * 4);
+            $questionsPerPage = 8;
+            $startNumber = 36 + (($currentStep - 7) * 8) + 1;
+            $endNumber = 36 + (($currentStep - 6) * 8);
         }
 
         $questions = $this->questionModel->where('type', $type)
@@ -124,10 +124,8 @@ class AssessmentController extends BaseController
             ];
         } else {
             $titles = [
-                7 => 'Gaya Interaksi Sosial',
-                8 => 'Cara Memproses Informasi',
-                9 => 'Pengambilan Keputusan',
-                10 => 'Gaya Hidup & Organisasi'
+                7 => 'Gaya Interaksi & Memproses Informasi',
+                8 => 'Pengambilan Keputusan & Gaya Hidup'
             ];
         }
 
@@ -154,7 +152,7 @@ class AssessmentController extends BaseController
         }
 
         $nextStep = $currentStep + 1;
-        $totalSteps = 10;
+        $totalSteps = 8;
 
         if ($nextStep > $totalSteps) {
             // Complete the test
@@ -248,6 +246,33 @@ class AssessmentController extends BaseController
         ];
 
         return view('assessment/result', $data);
+    }
+
+    public function previousStep()
+    {
+        $sessionToken = $this->request->getPost('session_token');
+        $currentStep = (int) $this->request->getPost('current_step');
+        
+        $session = $this->testSessionModel->getSessionByToken($sessionToken);
+        
+        if (!$session || $session['user_id'] != session()->get('user_id')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Sesi tidak valid']);
+        }
+        
+        $previousStep = $currentStep - 1;
+        
+        // Ensure we don't go below step 1
+        if ($previousStep < 1) {
+            $previousStep = 1;
+        }
+        
+        // Update session to previous step
+        $this->testSessionModel->updateProgress($session['id'], $previousStep);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'redirect' => "/test/$sessionToken"
+        ]);
     }
 
     public function majorDetail($majorId)

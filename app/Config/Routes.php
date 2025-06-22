@@ -39,6 +39,7 @@ $routes->group('test', ['filter' => 'auth'], function($routes) {
     $routes->get('start', 'AssessmentController::start');
     $routes->get('(:any)', 'AssessmentController::test/$1');
     $routes->post('save', 'AssessmentController::saveAnswers');
+    $routes->post('previous', 'AssessmentController::previousStep');
     $routes->get('result/(:any)', 'AssessmentController::result/$1');
     $routes->get('major/(:num)', 'AssessmentController::majorDetail/$1');
     $routes->get('pdf/(:any)', 'AssessmentController::downloadPDF/$1');
@@ -51,4 +52,5 @@ $routes->get('major/(:num)', 'AssessmentController::majorDetail/$1');
 $routes->group('api', function($routes) {
     $routes->post('save-progress', 'ApiController::saveProgress');
     $routes->get('get-progress/(:any)', 'ApiController::getProgress/$1');
+    $routes->get('test-result/(:num)', 'ApiController::getTestResult/$1');
 });
