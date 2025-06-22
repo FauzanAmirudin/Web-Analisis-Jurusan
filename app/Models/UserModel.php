@@ -15,7 +15,7 @@ class UserModel extends Model
     protected $allowedFields    = [
         'username', 'email', 'password', 'full_name', 
         'profile_picture', 'is_active', 'last_login_at',
-        'phone_number', 'birth_date'
+        'phone_number', 'birth_date', 'test_credits'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -114,5 +114,30 @@ class UserModel extends Model
     public function updateLastLogin($userId)
     {
         return $this->update($userId, ['last_login_at' => date('Y-m-d H:i:s')]);
+    }
+    
+    // Methods for managing test credits
+    public function hasTestCredits($userId)
+    {
+        $user = $this->find($userId);
+        return ($user && $user['test_credits'] > 0);
+    }
+    
+    public function useTestCredit($userId)
+    {
+        $user = $this->find($userId);
+        if ($user && $user['test_credits'] > 0) {
+            return $this->update($userId, ['test_credits' => $user['test_credits'] - 1]);
+        }
+        return false;
+    }
+    
+    public function addTestCredits($userId, $amount = 1)
+    {
+        $user = $this->find($userId);
+        if ($user) {
+            return $this->update($userId, ['test_credits' => $user['test_credits'] + $amount]);
+        }
+        return false;
     }
 }

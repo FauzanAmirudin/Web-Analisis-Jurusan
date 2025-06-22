@@ -8,6 +8,7 @@ use App\Models\TestAnswerModel;
 use App\Models\TestResultModel;
 use App\Models\MajorModel;
 use App\Libraries\PersonalityAnalyzer;
+use App\Models\UserModel;
 
 class AssessmentController extends BaseController
 {
@@ -17,6 +18,7 @@ class AssessmentController extends BaseController
     protected $testResultModel;
     protected $majorModel;
     protected $personalityAnalyzer;
+    protected $userModel;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class AssessmentController extends BaseController
         $this->testResultModel = new TestResultModel();
         $this->majorModel = new MajorModel();
         $this->personalityAnalyzer = new PersonalityAnalyzer();
+        $this->userModel = new UserModel();
     }
 
     public function start()
@@ -41,9 +44,15 @@ class AssessmentController extends BaseController
             $session = $incompleteSessions[0];
             return redirect()->to("/test/{$session['session_token']}");
         }
+        
+        // Check if user has test credits
+        if (!$this->userModel->hasTestCredits($userId)) {
+            return redirect()->to('/dashboard')->with('error', 'Anda tidak memiliki kredit tes tersisa. Silakan beli kredit tes tambahan untuk melanjutkan.');
+        }
 
-        // Create new session
+        // Create new session and deduct test credit
         $sessionToken = $this->testSessionModel->createSession($userId);
+        $this->userModel->useTestCredit($userId);
         
         return redirect()->to("/test/$sessionToken");
     }

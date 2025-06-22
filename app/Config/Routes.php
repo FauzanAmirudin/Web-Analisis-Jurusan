@@ -34,6 +34,13 @@ $routes->group('dashboard', ['filter' => 'auth'], function($routes) {
     $routes->get('history/delete/(:num)', 'DashboardController::deleteTestHistory/$1');
 });
 
+// Payment Routes (Protected)
+$routes->group('payment', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'PaymentController::index');
+    $routes->post('process', 'PaymentController::processPayment');
+    $routes->get('simulate', 'PaymentController::simulatePayment');
+});
+
 // Assessment Routes (Protected)
 $routes->group('test', ['filter' => 'auth'], function($routes) {
     $routes->get('start', 'AssessmentController::start');

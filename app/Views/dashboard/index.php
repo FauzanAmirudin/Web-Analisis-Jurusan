@@ -74,15 +74,15 @@
         <div class="bg-white rounded-xl shadow-soft p-4 sm:p-6 transition-custom hover:shadow-custom sm:col-span-2 md:col-span-1">
             <div class="flex items-center">
                 <div class="bg-yellow-100 p-3 sm:p-4 rounded-full">
-                    <i class="fas fa-clock text-yellow-600 text-lg sm:text-xl"></i>
+                    <i class="fas fa-ticket-alt text-yellow-600 text-lg sm:text-xl"></i>
                 </div>
                 <div class="ml-4 sm:ml-5">
-                    <p class="text-sm font-medium text-gray-500">Dalam Progress</p>
-                    <p class="text-xl sm:text-2xl font-bold text-gray-900"><?= $stats['in_progress_tests'] ?></p>
+                    <p class="text-sm font-medium text-gray-500">Kredit Tes</p>
+                    <p class="text-xl sm:text-2xl font-bold text-gray-900"><?= $user['test_credits'] ?? 0 ?></p>
                 </div>
             </div>
             <div class="mt-4 h-1 w-full bg-yellow-50">
-                <div class="h-1 bg-yellow-500" style="width: <?= $stats['total_tests'] > 0 ? ($stats['in_progress_tests'] / $stats['total_tests'] * 100) : 0 ?>%"></div>
+                <div class="h-1 bg-yellow-500" style="width: 100%"></div>
             </div>
         </div>
     </div>
@@ -131,11 +131,26 @@
                         <i class="fas fa-chart-bar text-gray-400 mr-2"></i> Analisis komprehensif
                     </div>
                 </div>
+                
+                <?php if (isset($user['test_credits']) && $user['test_credits'] > 0): ?>
                 <a href="/test/start" 
                    class="bg-gradient-to-r from-primary to-red-700 hover:from-red-700 hover:to-primary text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm font-medium transition-custom btn-hover inline-flex items-center">
                     <i class="fas fa-play mr-2"></i>
                     Mulai Tes Sekarang
                 </a>
+                <?php else: ?>
+                <div class="space-y-3">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800 mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Anda tidak memiliki kredit tes tersisa
+                    </div>
+                    <a href="/payment" 
+                       class="bg-gradient-to-r from-primary to-red-700 hover:from-red-700 hover:to-primary text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm font-medium transition-custom btn-hover inline-flex items-center">
+                        <i class="fas fa-shopping-cart mr-2"></i>
+                        Beli Kredit Tes
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -195,8 +210,7 @@
                             <i class="fas fa-eye mr-2"></i>
                             Lihat Detail
                         </a>
-                        <a href="/dashboard/history/pdf/<?= $latest_result['id'] ?>" 
-                           class="flex-1 bg-gray-100 text-gray-700 text-center py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-custom flex justify-center items-center">
+                        <a href="javascript:void(0);" class="pdf-download-btn flex-1 bg-gray-100 text-gray-700 text-center py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-custom flex justify-center items-center" data-id="<?= $latest_result['id'] ?>">
                             <i class="fas fa-file-pdf mr-2"></i>
                             Download PDF
                         </a>
@@ -280,4 +294,37 @@
     </div>
     <?php endif; ?>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<!-- Include PDF generation libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="<?= base_url('js/generate-pdf.js') ?>"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Deteksi perangkat mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log("Is mobile device:", isMobile);
+        
+        // Tangani tombol download PDF
+        const pdfButtons = document.querySelectorAll('.pdf-download-btn');
+        pdfButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const resultId = this.getAttribute('data-id');
+                console.log("PDF download requested for result ID:", resultId);
+                
+                if (isMobile) {
+                    console.log("Using server-side PDF generation for mobile");
+                    window.location.href = '/dashboard/history/pdf/' + resultId;
+                } else {
+                    console.log("Using client-side PDF generation for desktop");
+                    prepareAndGeneratePDF(resultId);
+                }
+            });
+        });
+    });
+</script>
 <?= $this->endSection() ?>

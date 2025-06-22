@@ -45,9 +45,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Tanggal Tes
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <!-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Tipe Kepribadian
-                            </th>
+                            </th> -->
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Nama Kepribadian
                             </th>
@@ -70,11 +70,11 @@
                                     <?= date('H:i', strtotime($item['completed_at'] ?? $item['created_at'])) ?> WIB
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <!-- <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary bg-opacity-10 text-primary">
                                     <?= $item['personality_type'] ?>
                                 </span>
-                            </td>
+                            </td> -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <?= $item['personality_name'] ?>
                             </td>
@@ -83,12 +83,8 @@
                                     <a href="<?= site_url('dashboard/history/'.$item['id']) ?>" class="text-primary hover:text-red-800">
                                         <i class="fas fa-eye"></i> Lihat
                                     </a>
-                                    <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $item['id'] ?>)" class="text-gray-600 hover:text-gray-900 ml-3">
+                                    <a href="javascript:void(0);" class="pdf-download-btn text-gray-600 hover:text-gray-900 ml-3" data-id="<?= $item['id'] ?>">
                                         <i class="fas fa-download"></i> PDF
-                                    </a>
-                                    <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
-                                       class="text-red-600 hover:text-red-800 ml-3 delete-test-btn">
-                                        <i class="fas fa-trash"></i> Hapus
                                     </a>
                                 </div>
                             </td>
@@ -110,9 +106,9 @@
                                 <?= date('H:i', strtotime($item['completed_at'] ?? $item['created_at'])) ?> WIB
                             </div>
                         </div>
-                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary bg-opacity-10 text-primary">
+                        <!-- <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary bg-opacity-10 text-primary">
                             <?= $item['personality_type'] ?>
-                        </span>
+                        </span> -->
                     </div>
                     <div class="mb-3">
                         <div class="text-sm font-medium text-gray-700">Nama Kepribadian:</div>
@@ -122,7 +118,7 @@
                         <a href="<?= site_url('dashboard/history/'.$item['id']) ?>" class="flex items-center text-primary hover:text-red-800">
                             <i class="fas fa-eye mr-1"></i> <span>Lihat</span>
                         </a>
-                        <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $item['id'] ?>)" class="flex items-center text-gray-600 hover:text-gray-900">
+                        <a href="javascript:void(0);" class="pdf-download-btn flex items-center text-gray-600 hover:text-gray-900 ml-3" data-id="<?= $item['id'] ?>">
                             <i class="fas fa-download mr-1"></i> <span>PDF</span>
                         </a>
                         <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
@@ -276,6 +272,31 @@
                             window.location.href = url;
                         }
                     }
+                }
+            });
+        });
+    });
+
+    // Setup click handlers for PDF download buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        // Deteksi perangkat mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log("Is mobile device:", isMobile);
+        
+        // Tangani tombol download PDF
+        const pdfButtons = document.querySelectorAll('.pdf-download-btn');
+        pdfButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const resultId = this.getAttribute('data-id');
+                console.log("PDF download requested for result ID:", resultId);
+                
+                if (isMobile) {
+                    console.log("Using server-side PDF generation for mobile");
+                    window.location.href = '/dashboard/history/pdf/' + resultId;
+                } else {
+                    console.log("Using client-side PDF generation for desktop");
+                    prepareAndGeneratePDF(resultId);
                 }
             });
         });

@@ -19,8 +19,7 @@
                 Diselesaikan pada <?= date('d F Y, H:i', strtotime($result['created_at'])) ?> WIB
             </p>
             <div class="flex justify-center space-x-4 mt-6">
-                <a href="javascript:void(0);" onclick="prepareAndGeneratePDF(<?= $result['id'] ?>)" 
-                   class="bg-yellow-400 text-gray-900 px-6 py-2 rounded-lg font-medium hover:bg-yellow-300 transition duration-200">
+                <a href="javascript:void(0);" class="pdf-download-btn bg-yellow-400 text-gray-900 px-6 py-2 rounded-lg font-medium hover:bg-yellow-300 transition duration-200" data-id="<?= $result['id'] ?>">
                     <i class="fas fa-download mr-2"></i>Download PDF
                 </a>
             </div>
@@ -186,4 +185,43 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="<?= base_url('js/generate-pdf.js') ?>"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Deteksi perangkat mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log("Is mobile device:", isMobile);
+        
+        // Untuk tombol download PDF yang lama (jika masih ada)
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+                if (isMobile) {
+                    // Redirect ke server-side PDF generation untuk perangkat mobile
+                    window.location.href = '/dashboard/history/pdf/<?= $result['id'] ?>';
+                } else {
+                    prepareAndGeneratePDF(<?= $result['id'] ?>);
+                }
+            });
+        }
+        
+        // Tambahkan event listener untuk tombol download PDF dengan class pdf-download-btn
+        const pdfButtons = document.querySelectorAll('.pdf-download-btn');
+        pdfButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const resultId = this.getAttribute('data-id');
+                console.log("PDF download requested for result ID:", resultId);
+                
+                if (isMobile) {
+                    console.log("Using server-side PDF generation for mobile");
+                    window.location.href = '/dashboard/history/pdf/' + resultId;
+                } else {
+                    console.log("Using client-side PDF generation for desktop");
+                    prepareAndGeneratePDF(resultId);
+                }
+            });
+        });
+    });
+</script>
 <?= $this->endSection() ?>

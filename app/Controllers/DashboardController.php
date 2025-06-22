@@ -26,6 +26,9 @@ class DashboardController extends BaseController
     {
         $userId = session()->get('user_id');
         
+        // Get user data including test credits
+        $userData = $this->userModel->find($userId);
+        
         // Get all user sessions
         $userSessions = $this->testSessionModel->getUserSessions($userId, 100); // Increased limit to get all sessions
         
@@ -66,7 +69,8 @@ class DashboardController extends BaseController
             'user' => [
                 'name' => session()->get('full_name'),
                 'email' => session()->get('email'),
-                'profile_picture' => session()->get('profile_picture')
+                'profile_picture' => session()->get('profile_picture'),
+                'test_credits' => $userData['test_credits'] ?? 0
             ],
             'stats' => [
                 'total_tests' => $totalTests,

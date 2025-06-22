@@ -3,111 +3,196 @@
  */
 
 function generateTestResultPDF(resultId) {
-  // Show loading spinner
-  document.getElementById("pdfLoadingSpinner").classList.remove("hidden");
+  console.log("Starting PDF generation for result ID:", resultId);
+
+  // Detect mobile device
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+  console.log("Is mobile device:", isMobile);
+
+  // Show loading spinner - check for both possible spinner IDs
+  const spinner = document.getElementById("pdfLoadingSpinner");
+  if (spinner) {
+    spinner.classList.remove("hidden");
+    console.log("Loading spinner displayed");
+  } else {
+    console.warn("Loading spinner element not found");
+  }
 
   // First, load the full test result view in a hidden container
   loadResultDetail(resultId)
     .then((resultHtml) => {
-      // Create hidden container
-      const container = document.createElement("div");
-      container.innerHTML = resultHtml;
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
-      container.style.top = "-9999px";
-      container.style.width = "1000px"; // Fixed width for better rendering
-      document.body.appendChild(container);
+      console.log("Result HTML loaded successfully");
 
-      // Get only the content part (not the navigation/sidebar)
-      const contentElement = container.querySelector(".container");
-      if (!contentElement) {
-        alert("Tidak dapat memuat konten hasil tes");
-        document.getElementById("pdfLoadingSpinner").classList.add("hidden");
-        return;
-      }
+      try {
+        // Create hidden container
+        const container = document.createElement("div");
+        container.innerHTML = resultHtml;
+        container.style.position = "absolute";
+        container.style.left = "-9999px";
+        container.style.top = "-9999px";
 
-      // Add branding footer for PDF
-      const footer = document.createElement("div");
-      footer.style.textAlign = "center";
-      footer.style.marginTop = "20px";
-      footer.style.padding = "10px 0";
-      footer.style.borderTop = "1px solid #e5e7eb";
-      footer.style.fontSize = "12px";
-      footer.style.color = "#6b7280";
-      footer.innerHTML = `© ${new Date().getFullYear()} Analisis Jurusan - Dibuat pada ${new Date().toLocaleDateString(
-        "id-ID",
-        { day: "2-digit", month: "long", year: "numeric" }
-      )}`;
-      contentElement.appendChild(footer);
+        // Adjust width based on device
+        container.style.width = isMobile ? "800px" : "1000px";
+        document.body.appendChild(container);
+        console.log(
+          "Hidden container created with width:",
+          container.style.width
+        );
 
-      // Wait a bit for fonts and images to load
-      setTimeout(() => {
-        // Scale down for PDF
-        const scale = 2; // Higher scale for better quality
-        const pdfWidth = 210; // A4 width in mm
-        const pdfHeight = 297; // A4 height in mm
+        // Get only the content part (not the navigation/sidebar)
+        const contentElement = container.querySelector(".container");
+        if (!contentElement) {
+          console.error("Content element not found in the loaded HTML");
+          alert("Tidak dapat memuat konten hasil tes");
+          hideLoadingSpinner();
+          return;
+        }
+        console.log("Content element found");
 
-        // Use html2canvas to capture the element
-        html2canvas(contentElement, {
-          scale: scale,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-        })
-          .then((canvas) => {
-            const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        // Add branding footer for PDF
+        const footer = document.createElement("div");
+        footer.style.textAlign = "center";
+        footer.style.marginTop = "20px";
+        footer.style.padding = "10px 0";
+        footer.style.borderTop = "1px solid #e5e7eb";
+        footer.style.fontSize = "12px";
+        footer.style.color = "#6b7280";
+        footer.innerHTML = `© ${new Date().getFullYear()} Analisis Jurusan - Dibuat pada ${new Date().toLocaleDateString(
+          "id-ID",
+          { day: "2-digit", month: "long", year: "numeric" }
+        )}`;
+        contentElement.appendChild(footer);
+        console.log("Footer added");
 
-            // Create PDF
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF("p", "mm", "a4");
+        // Wait a bit for fonts and images to load - longer for mobile
+        const renderDelay = isMobile ? 2000 : 1000;
+        console.log(`Waiting ${renderDelay}ms for rendering...`);
 
-            // Calculate how many pages we need
-            let heightLeft = imgHeight;
-            let position = 0;
-            let page = 1;
+        setTimeout(() => {
+          // Adjust scale based on device
+          const scale = isMobile ? 1.5 : 2; // Lower scale for mobile to avoid memory issues
+          const pdfWidth = 210; // A4 width in mm
+          const pdfHeight = 297; // A4 height in mm
 
-            // First page
-            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
+          console.log("Starting html2canvas with scale:", scale);
 
-            // Add more pages if needed
-            while (heightLeft > 0) {
-              position = -pdfHeight * page;
-              pdf.addPage();
-              pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-              heightLeft -= pdfHeight;
-              page++;
-            }
-
-            // Save PDF
-            pdf.save(
-              `Hasil_Tes_Analisis_Jurusan_${new Date()
-                .toISOString()
-                .slice(0, 10)}.pdf`
-            );
-
-            // Remove the temporary container
-            document.body.removeChild(container);
-            document
-              .getElementById("pdfLoadingSpinner")
-              .classList.add("hidden");
+          // Use html2canvas with optimized settings for mobile
+          html2canvas(contentElement, {
+            scale: scale,
+            useCORS: true,
+            logging: true, // Enable logging for debugging
+            allowTaint: true,
+            imageTimeout: 15000, // Longer timeout for mobile
+            removeContainer: false, // Don't remove the container to avoid errors
           })
-          .catch((error) => {
-            console.error("Error creating PDF:", error);
-            alert("Terjadi kesalahan saat membuat PDF");
-            document
-              .getElementById("pdfLoadingSpinner")
-              .classList.add("hidden");
-            document.body.removeChild(container);
-          });
-      }, 1000); // Wait 1 second for rendering
+            .then((canvas) => {
+              console.log(
+                "Canvas created successfully, dimensions:",
+                canvas.width,
+                "x",
+                canvas.height
+              );
+
+              try {
+                // Convert to image with lower quality on mobile to reduce size
+                const imgQuality = isMobile ? 0.8 : 1.0;
+                const imgData = canvas.toDataURL("image/jpeg", imgQuality);
+                console.log("Canvas converted to image data");
+
+                // Create PDF with error handling
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                  throw new Error("jsPDF library not loaded properly");
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF("p", "mm", "a4");
+                console.log("PDF object created");
+
+                const imgWidth = pdfWidth;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                console.log(
+                  "Image dimensions for PDF:",
+                  imgWidth,
+                  "x",
+                  imgHeight
+                );
+
+                // Calculate how many pages we need
+                let heightLeft = imgHeight;
+                let position = 0;
+                let page = 1;
+
+                // First page
+                console.log("Adding first page to PDF");
+                pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+
+                // Add more pages if needed
+                while (heightLeft > 0) {
+                  position = -pdfHeight * page;
+                  pdf.addPage();
+                  pdf.addImage(
+                    imgData,
+                    "JPEG",
+                    0,
+                    position,
+                    imgWidth,
+                    imgHeight
+                  );
+                  heightLeft -= pdfHeight;
+                  page++;
+                  console.log("Added page", page, "to PDF");
+                }
+
+                // Generate filename
+                const filename = `Hasil_Tes_Analisis_Jurusan_${new Date()
+                  .toISOString()
+                  .slice(0, 10)}.pdf`;
+                console.log("Saving PDF with filename:", filename);
+
+                // Save PDF
+                pdf.save(filename);
+                console.log("PDF saved successfully");
+
+                // Clean up
+                document.body.removeChild(container);
+                hideLoadingSpinner();
+                console.log("PDF generation completed successfully");
+              } catch (pdfError) {
+                console.error("Error creating PDF from canvas:", pdfError);
+                alert(
+                  "Terjadi kesalahan saat membuat PDF. Silakan coba di perangkat desktop."
+                );
+                hideLoadingSpinner();
+                document.body.removeChild(container);
+              }
+            })
+            .catch((canvasError) => {
+              console.error("Error creating canvas:", canvasError);
+              alert(
+                "Terjadi kesalahan saat membuat PDF. Silakan coba di perangkat desktop."
+              );
+              hideLoadingSpinner();
+              document.body.removeChild(container);
+            });
+        }, renderDelay);
+      } catch (containerError) {
+        console.error("Error setting up container:", containerError);
+        alert(
+          "Terjadi kesalahan saat menyiapkan PDF. Silakan coba di perangkat desktop."
+        );
+        hideLoadingSpinner();
+      }
     })
-    .catch((error) => {
-      console.error("Error loading result detail:", error);
-      alert("Terjadi kesalahan saat memuat detail hasil tes");
-      document.getElementById("pdfLoadingSpinner").classList.add("hidden");
+    .catch((loadError) => {
+      console.error("Error loading result detail:", loadError);
+      alert(
+        "Terjadi kesalahan saat memuat detail hasil tes. Silakan coba lagi nanti."
+      );
+      hideLoadingSpinner();
     });
 }
 
@@ -123,6 +208,14 @@ async function loadResultDetail(resultId) {
   } catch (error) {
     console.error("Error:", error);
     throw error;
+  }
+}
+
+// Helper function to hide loading spinner
+function hideLoadingSpinner() {
+  const spinner = document.getElementById("pdfLoadingSpinner");
+  if (spinner) {
+    spinner.classList.add("hidden");
   }
 }
 
