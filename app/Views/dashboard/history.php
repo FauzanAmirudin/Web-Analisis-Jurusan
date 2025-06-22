@@ -144,8 +144,8 @@
 </div>
 
 <!-- Delete confirmation modal -->
-<div x-data="deleteModal" class="relative z-50">
-    <!-- Modal backdrop -->
+<div x-data="deleteConfirmation" class="relative z-50">
+    <!-- Modal backdrop with blur effect -->
     <div x-show="open" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -153,77 +153,117 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-black bg-opacity-50" 
+         class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
          @click="closeModal()"></div>
 
-    <!-- Modal dialog -->
+    <!-- Modal dialog with improved animation -->
     <div x-show="open" 
          x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform scale-90"
-         x-transition:enter-end="opacity-100 transform scale-100"
+         x-transition:enter-start="opacity-0 transform scale-90 translate-y-4"
+         x-transition:enter-end="opacity-100 transform scale-100 translate-y-0"
          x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 transform scale-100"
-         x-transition:leave-end="opacity-0 transform scale-90"
+         x-transition:leave-start="opacity-100 transform scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 transform scale-90 translate-y-4"
          class="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md mx-auto overflow-hidden w-full" @click.away="closeModal()">
-            <div class="bg-red-50 px-6 py-4 border-b border-red-100">
+        
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md mx-auto overflow-hidden w-full border border-red-100" 
+             @click.away="closeModal()" 
+             x-transition:enter="transition ease-out duration-300 delay-150"
+             x-transition:enter-start="opacity-0 transform scale-95"
+             x-transition:enter-end="opacity-100 transform scale-100">
+            
+            <!-- Header with gradient background -->
+            <div class="bg-gradient-to-r from-red-500 to-red-700 px-6 py-5 border-b border-red-300/30">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <div class="bg-red-100 p-2 rounded-full">
-                            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                        <div class="bg-white/20 backdrop-blur-sm p-3 rounded-full shadow-lg">
+                            <i class="fas fa-exclamation-triangle text-white text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-800 ml-3">Konfirmasi Hapus</h3>
+                        <h3 class="text-lg font-bold text-white ml-4 tracking-wide">Konfirmasi Hapus</h3>
                     </div>
-                    <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <button @click="closeModal()" class="text-white/80 hover:text-white hover:bg-white/10 h-8 w-8 rounded-full flex items-center justify-center transition-all duration-200">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
-            <div class="px-6 py-4">
-                <p class="text-gray-600">Apakah Anda yakin ingin menghapus riwayat tes ini? Tindakan ini tidak dapat dibatalkan.</p>
+            
+            <!-- Content with icon -->
+            <div class="px-6 py-6 flex items-start">
+                <div class="mr-4 mt-1 text-red-500 text-4xl hidden sm:block">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <div>
+                    <h4 class="text-gray-800 font-semibold text-lg mb-2">Hapus Riwayat Tes</h4>
+                    <p class="text-gray-600">Apakah Anda yakin ingin menghapus riwayat tes ini? Tindakan ini <span class="font-semibold text-red-500">tidak dapat</span> dibatalkan.</p>
+                </div>
             </div>
-            <div class="px-6 py-3 bg-gray-50 flex justify-end space-x-3">
-                <button @click="closeModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-custom">
+            
+            <!-- Action buttons with improved styling -->
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-200">
+                <button @click="closeModal()" 
+                        class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all duration-200 font-medium flex items-center">
+                    <i class="fas fa-times mr-2 text-gray-400"></i>
                     Batal
                 </button>
-                <button @click="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-custom flex items-center">
-                    <i class="fas fa-trash mr-2"></i> Hapus
+                <button @click="confirmDelete()" 
+                        class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 hover:shadow-md transition-all duration-200 font-medium flex items-center group">
+                    <i class="fas fa-trash-alt mr-2 transform group-hover:scale-110 transition-transform duration-200"></i>
+                    Hapus
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript for delete confirmation -->
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
-    // Create a global variable to store the delete modal functionality
-    window.deleteModal = {
-        open: false,
-        url: '',
-        openModal(url) {
-            this.url = url;
-            this.open = true;
-        },
-        closeModal() {
-            this.open = false;
-        },
-        confirmDelete() {
-            window.location.href = this.url;
-        }
-    };
+    // Define Alpine.js component
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('deleteConfirmation', () => ({
+            open: false,
+            deleteUrl: '',
+            openModal(url) {
+                this.deleteUrl = url;
+                this.open = true;
+            },
+            closeModal() {
+                this.open = false;
+            },
+            confirmDelete() {
+                window.location.href = this.deleteUrl;
+            }
+        }));
+    });
     
+    // Setup click handlers for delete buttons
     document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners to all delete buttons
         const deleteButtons = document.querySelectorAll('.delete-test-btn');
+        
         deleteButtons.forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const url = this.getAttribute('href');
-                // Call the Alpine.js function to open modal
-                window.deleteModal.openModal(url);
+                
+                // Get Alpine.js component instance and call its method
+                const modal = Alpine.store('deleteConfirmation');
+                if (modal) {
+                    modal.openModal(url);
+                } else {
+                    // Fallback - access the Alpine component directly
+                    const modalEl = document.querySelector('[x-data="deleteConfirmation"]');
+                    if (modalEl && modalEl.__x) {
+                        modalEl.__x.getUnobservedData().openModal(url);
+                    } else {
+                        // Ultimate fallback - normal confirmation
+                        if (confirm('Apakah Anda yakin ingin menghapus riwayat tes ini?')) {
+                            window.location.href = url;
+                        }
+                    }
+                }
             });
         });
     });
 </script>
-
 <?= $this->endSection() ?> 

@@ -133,9 +133,9 @@
                 <div class="mt-12">
                     <div class="flex justify-center">
                         <div class="flex -space-x-2">
-                            <img src="https://ui-avatars.com/api/?name=John+Doe&background=7C0A02&color=fff" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
-                            <img src="https://ui-avatars.com/api/?name=Jane+Smith&background=7C0A02&color=fff" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
-                            <img src="https://ui-avatars.com/api/?name=Bob+Johnson&background=7C0A02&color=fff" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <img src="/images/avatar-1.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <img src="/images/avatar-2.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <img src="/images/Avatar-3.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
                         </div>
                     </div>
                     <p class="mt-3 text-sm text-red-100">Bergabung dengan 1,000+ pengguna lainnya</p>

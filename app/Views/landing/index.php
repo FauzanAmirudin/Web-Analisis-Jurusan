@@ -103,7 +103,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-4 text-gray-900">Rekomendasi Akurat</h3>
                     <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
-                        Dapatkan 5 rekomendasi jurusan teratas dengan tingkat kesesuaian yang tinggi dengan kepribadian Anda
+                        Dapatkan rekomendasi jurusan teratas dengan tingkat kesesuaian yang tinggi dengan kepribadian Anda
                     </p>
                 </div>
 
@@ -170,6 +170,64 @@
         </div>
     </section>
 
+    <!-- E-Book Section -->
+    <section class="py-16 sm:py-24 bg-white relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-white opacity-70"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
+                <!-- Left Side - Book Image -->
+                <div class="flex justify-center lg:justify-center lg:pr-0">
+                    <div class="relative w-48 sm:w-56 md:w-72 transform transition-transform hover:scale-105 duration-500 lg:mr-0">
+                        <div class="absolute inset-0 bg-primary/10 rounded-lg transform rotate-3"></div>
+                        <div class="shadow-2xl rounded-lg overflow-hidden relative z-10">
+                            <img src="/images/ebook.png" alt="E-Book Analisis Minat" class="w-full h-auto">
+                        </div>
+                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center text-primary font-bold z-20">
+                            <span class="text-sm">GRATIS</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side - Text Content -->
+                <div class="lg:pl-4">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6">
+                        Panduan Lengkap Pemilihan Jurusan
+                    </h2>
+                    <div class="h-1 w-20 bg-primary mb-6 sm:mb-8"></div>
+                    <p class="text-base sm:text-lg text-gray-600 leading-relaxed mb-4 sm:mb-6">
+                        Ingin memahami lebih dalam mengapa analisis kepribadian sangat penting dalam pemilihan jurusan?
+                    </p>
+                    <p class="text-base sm:text-lg text-gray-600 leading-relaxed mb-6 sm:mb-8">
+                        E-book kami berisi penelitian terkini, studi kasus, dan panduan komprehensif tentang hubungan antara tipe kepribadian dan kesuksesan akademik. Dapatkan wawasan mendalam dari para ahli psikologi pendidikan dan konselor karier profesional.
+                    </p>
+                    <ul class="space-y-3 mb-8 sm:mb-10">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-primary mt-1 mr-3"></i>
+                            <span class="text-gray-700">Rahasia memilih jurusan yang sesuai dengan kepribadian Anda</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-primary mt-1 mr-3"></i>
+                            <span class="text-gray-700">Tips memaksimalkan potensi berdasarkan tipe MBTI</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-primary mt-1 mr-3"></i>
+                            <span class="text-gray-700">Strategi pengembangan karier jangka panjang</span>
+                        </li>
+                    </ul>
+                    <div class="flex justify-center lg:justify-start">
+                        <a href="https://example.com/ebook-download" target="_blank" rel="noopener noreferrer" 
+                           class="bg-gradient-to-r from-primary to-red-700 text-white px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center hover:shadow-lg hover:from-red-700 hover:to-primary transition-custom btn-hover group">
+                            <span>Download E-Book Gratis</span>
+                            <i class="fas fa-arrow-right ml-3 transform group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="py-16 sm:py-24 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-tr from-primary to-red-700"></div>
@@ -206,13 +264,13 @@
                         Platform terpercaya untuk membantu siswa menemukan jurusan kuliah yang sesuai dengan kepribadian dan minat mereka.
                     </p>
                     <div class="flex space-x-3 sm:space-x-4">
-                        <a href="#" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
-                            <i class="fab fa-facebook-f text-sm sm:text-base"></i>
+                        <a href="https://www.youtube.com/@lampungcerdas" target="_blank" rel="noopener noreferrer" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
+                            <i class="fab fa-youtube text-sm sm:text-base"></i>
                         </a>
-                        <a href="#" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
-                            <i class="fab fa-twitter text-sm sm:text-base"></i>
+                        <a href="https://www.tiktok.com/@lampungcerdas" target="_blank" rel="noopener noreferrer" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
+                            <i class="fab fa-tiktok text-sm sm:text-base"></i>
                         </a>
-                        <a href="#" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
+                        <a href="https://www.instagram.com/lampungcerdas" target="_blank" rel="noopener noreferrer" class="bg-gray-800 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:bg-primary transition-custom">
                             <i class="fab fa-instagram text-sm sm:text-base"></i>
                         </a>
                     </div>
