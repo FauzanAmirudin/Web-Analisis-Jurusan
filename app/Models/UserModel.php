@@ -15,7 +15,7 @@ class UserModel extends Model
     protected $allowedFields    = [
         'username', 'email', 'password', 'full_name', 
         'profile_picture', 'is_active', 'last_login_at',
-        'phone_number', 'birth_date', 'test_credits'
+        'phone_number', 'birth_date', 'test_credits', 'role'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -33,7 +33,8 @@ class UserModel extends Model
         'password'     => 'required|min_length[6]',
         'full_name'    => 'required|min_length[2]|max_length[100]',
         'phone_number' => 'permit_empty|min_length[10]|max_length[20]',
-        'birth_date'   => 'permit_empty|valid_date'
+        'birth_date'   => 'permit_empty|valid_date',
+        'role'         => 'permit_empty|in_list[user,admin]'
     ];
 
     protected $validationMessages = [
@@ -77,6 +78,12 @@ class UserModel extends Model
     protected function hashPassword(array $data)
     {
         if (isset($data['data']['password'])) {
+            // Cek jika password kosong pada update, maka skip
+            if (empty($data['data']['password'])) {
+                unset($data['data']['password']);
+                return $data;
+            }
+            
             $plainPassword = $data['data']['password'];
             $data['data']['password'] = password_hash($plainPassword, PASSWORD_DEFAULT);
             

@@ -55,6 +55,24 @@ $routes->group('test', ['filter' => 'auth'], function($routes) {
 // Major Detail Route
 $routes->get('major/(:num)', 'AssessmentController::majorDetail/$1');
 
+// Admin Routes (Protected with Admin Filter)
+$routes->group('admin', ['filter' => 'admin'], function($routes) {
+    $routes->get('/', 'AdminController::index');
+    
+    // User Management Routes
+    $routes->get('users', 'AdminController::users');
+    $routes->get('users/create', 'AdminController::createUser');
+    $routes->post('users/store', 'AdminController::storeUser');
+    $routes->get('users/edit/(:num)', 'AdminController::editUser/$1');
+    $routes->post('users/update/(:num)', 'AdminController::updateUser/$1');
+    $routes->get('users/activities/(:num)', 'AdminController::userActivities/$1');
+    $routes->post('users/delete/(:num)', 'AdminController::deleteUser/$1');
+    $routes->post('users/adjust-credits/(:num)', 'AdminController::adjustCredits/$1');
+    $routes->get('users/toggle-status/(:num)', 'AdminController::toggleStatus/$1');
+    $routes->post('users/reset-password/(:num)', 'AdminController::resetPassword/$1');
+    $routes->get('get-csrf-token', 'AdminController::getCsrfToken');
+});
+
 // API Routes
 $routes->group('api', function($routes) {
     $routes->post('save-progress', 'ApiController::saveProgress');

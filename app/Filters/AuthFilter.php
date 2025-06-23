@@ -12,7 +12,7 @@ class AuthFilter implements FilterInterface
     {
         $session = session();
         
-        if (!$session->get('user_id')) {
+        if (!$session->get('isLoggedIn')) {
             return redirect()->to('/auth/login')->with('error', 'Anda harus login terlebih dahulu');
         }
     }

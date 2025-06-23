@@ -13,6 +13,7 @@ class Filters extends BaseConfig
         'invalidchars'  => \CodeIgniter\Filters\InvalidChars::class,
         'secureheaders' => \CodeIgniter\Filters\SecureHeaders::class,
         'auth'          => \App\Filters\AuthFilter::class,
+        'admin'         => \App\Filters\AdminFilter::class,
     ];
 
     public array $globals = [

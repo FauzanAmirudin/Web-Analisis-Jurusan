@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Dashboard - Lampung Cerdas' ?></title>
+    <title><?= $title ?? 'Admin Dashboard - Lampung Cerdas' ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo.png">
@@ -17,7 +17,11 @@
                     colors: {
                         primary: '#7C0A02',
                         secondary: '#D9D9D9',
-                        accent: '#DC2626'
+                        accent: '#DC2626',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                        dark: '#1F2937'
                     },
                     fontFamily: {
                         'poppins': ['Poppins', 'sans-serif']
@@ -38,6 +42,9 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Flatpickr Date Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <style>
         body { 
@@ -76,61 +83,55 @@
         .dropdown-menu {
             z-index: 100;
         }
+        /* Table striped rows */
+        .table-striped tr:nth-child(even) {
+            background-color: rgba(249, 250, 251, 0.8);
+        }
+        /* Table hover effect */
+        .table-hover tr:hover {
+            background-color: rgba(243, 244, 246, 0.8);
+        }
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
     </style>
 </head>
 <body class="h-full">
     <div x-data="{ sidebarOpen: false }" class="flex h-full">
-        <!-- Sidebar - Default hidden on all screen sizes -->
-        <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-custom transform transition-transform duration-300 ease-in-out -translate-x-full" 
-             :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
+        <!-- Sidebar - Default hidden on small screens, visible on larger screens -->
+        <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-custom transform transition-transform duration-300 ease-in-out lg:translate-x-0" 
+             :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen, 'lg:translate-x-0': true }">
             <div class="bg-gradient-to-r from-primary to-red-800 h-16 flex items-center justify-between px-4">
                 <div class="flex items-center">
                     <img src="/images/logo.png" alt="Lampung Cerdas Logo" class="h-8 mr-2">
-                    <h1 class="text-xl font-bold text-white">Lampung Cerdas</h1>
+                    <h1 class="text-xl font-bold text-white">Admin Panel</h1>
                 </div>
                 <button @click="sidebarOpen = false" class="text-white hover:text-gray-200 lg:hidden">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <nav class="mt-8">
+            <nav class="mt-6">
                 <div class="px-4 space-y-2">
-                <a href="/" 
-                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= uri_string() === 'home' ? 'nav-item-active text-white' : '' ?>">
-                        <i class="fas fa-tachometer-alt mr-3"></i>
-                        Home
-                    </a>
-                    <a href="/dashboard" 
-                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= uri_string() === 'dashboard' ? 'nav-item-active text-white' : '' ?>">
+                    <a href="/admin" 
+                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= uri_string() === 'admin' ? 'nav-item-active text-white' : '' ?>">
                         <i class="fas fa-tachometer-alt mr-3"></i>
                         Dashboard
                     </a>
                     
-                    <a href="/test/start" 
+                    <a href="/admin/users" 
+                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= str_contains(uri_string(), 'admin/users') ? 'nav-item-active text-white' : '' ?>">
+                        <i class="fas fa-users mr-3"></i>
+                        Manajemen Pengguna
+                    </a>
+                    
+                    <a href="/dashboard" 
                        class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom">
-                        <i class="fas fa-play mr-3"></i>
-                        Mulai Tes
+                        <i class="fas fa-chevron-left mr-3"></i>
+                        Kembali ke Dashboard
                     </a>
-                    
-                    <a href="/dashboard/history" 
-                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= uri_string() === 'dashboard/history' ? 'nav-item-active text-white' : '' ?>">
-                        <i class="fas fa-history mr-3"></i>
-                        Riwayat Tes
-                    </a>
-                    
-                    <a href="/dashboard/profile" 
-                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom <?= uri_string() === 'dashboard/profile' ? 'nav-item-active text-white' : '' ?>">
-                        <i class="fas fa-user mr-3"></i>
-                        Profil
-                    </a>
-                    
-                    <?php if (session('role') === 'admin'): ?>
-                    <a href="/admin" 
-                       class="flex items-center px-4 py-3 text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-custom mt-4">
-                        <i class="fas fa-user-shield mr-3"></i>
-                        Panel Admin
-                    </a>
-                    <?php endif; ?>
                 </div>
                 
                 <div class="mt-10 pt-8 border-t border-gray-100">
@@ -147,7 +148,7 @@
         </div>
 
         <!-- Main Content - Full width by default -->
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
             <!-- Top Bar -->
             <div class="bg-white shadow-soft sticky top-0 z-40">
                 <div class="px-4 sm:px-6 lg:px-8">
@@ -228,6 +229,26 @@
                             </div>
                         </div>
                     <?php endif; ?>
+                    
+                    <?php if (session()->has('errors')): ?>
+                        <div x-data="{ show: true }" x-show="show" x-transition class="mb-6">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 shadow-soft">
+                                <div class="flex">
+                                    <i class="fas fa-exclamation-circle text-red-500 mr-3 mt-0.5"></i>
+                                    <div class="flex-1">
+                                        <ul class="text-sm text-red-700 list-disc pl-5">
+                                            <?php foreach (session('errors') as $error): ?>
+                                                <li><?= $error ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <button @click="show = false" class="text-red-400 hover:text-red-600 transition-custom">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <?= $this->renderSection('content') ?>
                 </div>
@@ -236,11 +257,44 @@
 
         <!-- Sidebar Overlay -->
         <div x-show="sidebarOpen" @click="sidebarOpen = false" 
-             class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75" x-transition></div>
+             class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden" x-transition></div>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date pickers
+            flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                allowInput: true
+            });
+            
+            // Initialize tooltips
+            const tooltips = document.querySelectorAll('[data-tooltip]');
+            tooltips.forEach(tooltip => {
+                tooltip.addEventListener('mouseenter', () => {
+                    const tooltipText = tooltip.getAttribute('data-tooltip');
+                    const tooltipEl = document.createElement('div');
+                    tooltipEl.className = 'absolute z-50 px-3 py-2 text-xs font-medium text-white bg-gray-900 rounded-lg shadow-sm tooltip';
+                    tooltipEl.innerHTML = tooltipText;
+                    tooltipEl.style.bottom = '100%';
+                    tooltipEl.style.left = '50%';
+                    tooltipEl.style.transform = 'translateX(-50%) translateY(-5px)';
+                    tooltipEl.style.whiteSpace = 'nowrap';
+                    tooltip.appendChild(tooltipEl);
+                });
+                
+                tooltip.addEventListener('mouseleave', () => {
+                    const tooltipEl = tooltip.querySelector('.tooltip');
+                    if (tooltipEl) {
+                        tooltipEl.remove();
+                    }
+                });
+            });
+        });
+    </script>
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

@@ -79,7 +79,8 @@ class AuthController extends BaseController
             'profile_picture' => $user['profile_picture'],
             'phone_number' => $user['phone_number'],
             'birth_date' => $user['birth_date'],
-            'logged_in' => true
+            'role' => $user['role'] ?? 'user',
+            'isLoggedIn' => true
         ]);
 
         log_message('debug', 'Login successful for user ID: ' . $user['id']);
