@@ -127,6 +127,11 @@
                         Manajemen Pengguna
                     </a>
                     
+                    <a href="/admin/questions" class="flex items-center px-4 py-3 mb-1 transition-all rounded-lg <?= strpos(current_url(), '/admin/questions') !== false ? 'bg-red-100 text-red-900' : 'text-gray-600 hover:bg-gray-50' ?>">
+                        <i class="fas fa-question-circle w-6 text-center mr-3"></i>
+                        <span>Manajemen Pertanyaan</span>
+                    </a>
+                    
                     <a href="/dashboard" 
                        class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom">
                         <i class="fas fa-chevron-left mr-3"></i>

@@ -4,18 +4,24 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\UserActivityModel;
+use App\Models\QuestionModel;
+use App\Models\TestAnswerModel;
 
 class AdminController extends BaseController
 {
     protected $userModel;
     protected $activityModel;
     protected $db;
+    protected $questionModel;
+    protected $answerModel;
     
     public function __construct()
     {
         $this->userModel = new UserModel();
         $this->activityModel = new UserActivityModel();
         $this->db = \Config\Database::connect();
+        $this->questionModel = new QuestionModel();
+        $this->answerModel = new TestAnswerModel();
     }
     
     // Middleware to check if user is admin
@@ -509,5 +515,294 @@ class AdminController extends BaseController
             'token_name' => csrf_token(),
             'token_hash' => csrf_hash()
         ]);
+    }
+    
+    // ======= QUESTION MANAGEMENT =======
+    
+    // List all questions
+    public function questions()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->request->getGet('type') ?? 'all';
+        $category = $this->request->getGet('category') ?? '';
+        $search = $this->request->getGet('search') ?? '';
+        $status = $this->request->getGet('status') ?? 'all';
+        
+        $questionModel = new \App\Models\QuestionModel();
+        
+        // Apply filters
+        if ($type !== 'all') {
+            $questionModel->where('type', $type);
+        }
+        
+        if (!empty($category)) {
+            $questionModel->where('category', $category);
+        }
+        
+        if ($status !== 'all') {
+            $questionModel->where('is_active', $status === 'active' ? 1 : 0);
+        }
+        
+        if (!empty($search)) {
+            $questionModel->like('question_text', $search);
+        }
+        
+        $questions = $questionModel->orderBy('type', 'ASC')
+                           ->orderBy('category', 'ASC')
+                           ->orderBy('order_number', 'ASC')
+                           ->paginate(20);
+        
+        // Check if questions are used in answers
+        $usedQuestions = [];
+        if (!empty($questions)) {
+            $questionIds = array_column($questions, 'id');
+            
+            $answerModel = new \App\Models\TestAnswerModel();
+            $usedQuestionsData = $answerModel->select('question_id')
+                                           ->whereIn('question_id', $questionIds)
+                                           ->groupBy('question_id')
+                                           ->findAll();
+            
+            $usedQuestions = array_column($usedQuestionsData, 'question_id');
+        }
+        
+        $data = [
+            'title' => 'Manajemen Pertanyaan',
+            'page_title' => 'Manajemen Pertanyaan',
+            'questions' => $questions,
+            'pager' => $questionModel->pager,
+            'usedQuestions' => $usedQuestions,
+            'filters' => [
+                'type' => $type,
+                'category' => $category,
+                'search' => $search,
+                'status' => $status
+            ]
+        ];
+        
+        return view('admin/questions/index', $data);
+    }
+    
+    // Create new question form
+    public function createQuestion()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $data = [
+            'title' => 'Tambah Pertanyaan Baru',
+            'page_title' => 'Tambah Pertanyaan Baru',
+            'validation' => \Config\Services::validation()
+        ];
+        
+        return view('admin/questions/create', $data);
+    }
+    
+    // Store new question
+    public function storeQuestion()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Validate input
+        $rules = [
+            'question_text' => 'required|min_length[5]',
+            'type' => 'required|in_list[riasec,mbti]',
+            'category' => 'required',
+            'order_number' => 'required|integer|greater_than[0]',
+        ];
+        
+        // MBTI questions need direction
+        if ($this->request->getPost('type') === 'mbti') {
+            $rules['mbti_direction'] = 'required|in_list[E,I,S,N,T,F,J,P]';
+        }
+        
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Check for duplicate question order
+        $questionModel = new \App\Models\QuestionModel();
+        $existingQuestion = $questionModel->where('type', $this->request->getPost('type'))
+                                        ->where('order_number', $this->request->getPost('order_number'))
+                                        ->first();
+        
+        if ($existingQuestion) {
+            return redirect()->back()->withInput()->with('error', 'Pertanyaan dengan urutan tersebut sudah ada');
+        }
+        
+        // Prepare question data
+        $questionData = [
+            'question_text' => $this->request->getPost('question_text'),
+            'type' => $this->request->getPost('type'),
+            'category' => $this->request->getPost('category'),
+            'order_number' => $this->request->getPost('order_number'),
+            'is_active' => $this->request->getPost('is_active') ? 1 : 0,
+        ];
+        
+        // Add MBTI direction if needed
+        if ($this->request->getPost('type') === 'mbti') {
+            $questionData['mbti_direction'] = $this->request->getPost('mbti_direction');
+        }
+        
+        // Insert question
+        if ($questionModel->insert($questionData)) {
+            return redirect()->to('/admin/questions')->with('success', 'Pertanyaan baru berhasil ditambahkan');
+        } else {
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan pertanyaan. Silakan coba lagi.');
+        }
+    }
+    
+    // Edit question form
+    public function editQuestion($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $questionModel = new \App\Models\QuestionModel();
+        $question = $questionModel->find($id);
+        
+        if (!$question) {
+            return redirect()->to('/admin/questions')->with('error', 'Pertanyaan tidak ditemukan');
+        }
+        
+        $data = [
+            'title' => 'Edit Pertanyaan',
+            'page_title' => 'Edit Pertanyaan',
+            'question' => $question,
+            'validation' => \Config\Services::validation()
+        ];
+        
+        return view('admin/questions/edit', $data);
+    }
+    
+    // Update question
+    public function updateQuestion($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $questionModel = new \App\Models\QuestionModel();
+        $question = $questionModel->find($id);
+        
+        if (!$question) {
+            return redirect()->to('/admin/questions')->with('error', 'Pertanyaan tidak ditemukan');
+        }
+        
+        // Validate input
+        $rules = [
+            'question_text' => 'required|min_length[5]',
+            'category' => 'required',
+            'order_number' => 'required|integer|greater_than[0]',
+        ];
+        
+        // MBTI questions need direction
+        if ($question['type'] === 'mbti') {
+            $rules['mbti_direction'] = 'required|in_list[E,I,S,N,T,F,J,P]';
+        }
+        
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Check for duplicate question order (excluding this question)
+        $existingQuestion = $questionModel->where('type', $question['type'])
+                                        ->where('order_number', $this->request->getPost('order_number'))
+                                        ->where('id !=', $id)
+                                        ->first();
+        
+        if ($existingQuestion) {
+            return redirect()->back()->withInput()->with('error', 'Pertanyaan dengan urutan tersebut sudah ada');
+        }
+        
+        // Prepare question data
+        $questionData = [
+            'question_text' => $this->request->getPost('question_text'),
+            'category' => $this->request->getPost('category'),
+            'order_number' => $this->request->getPost('order_number'),
+            'is_active' => $this->request->getPost('is_active') ? 1 : 0,
+        ];
+        
+        // Add MBTI direction if needed
+        if ($question['type'] === 'mbti') {
+            $questionData['mbti_direction'] = $this->request->getPost('mbti_direction');
+        }
+        
+        // Update question
+        if ($questionModel->update($id, $questionData)) {
+            return redirect()->to('/admin/questions')->with('success', 'Pertanyaan berhasil diperbarui');
+        } else {
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui pertanyaan. Silakan coba lagi.');
+        }
+    }
+    
+    // Delete question
+    public function deleteQuestion($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $questionModel = new \App\Models\QuestionModel();
+        $question = $questionModel->find($id);
+        
+        if (!$question) {
+            return redirect()->to('/admin/questions')->with('error', 'Pertanyaan tidak ditemukan');
+        }
+        
+        // Check if question is used in any answers
+        $answerModel = new \App\Models\TestAnswerModel();
+        $usedInAnswers = $answerModel->where('question_id', $id)->countAllResults() > 0;
+        
+        if ($usedInAnswers) {
+            return redirect()->to('/admin/questions')->with('error', 'Pertanyaan tidak dapat dihapus karena sudah digunakan dalam jawaban tes');
+        }
+        
+        // Delete question
+        if ($questionModel->delete($id)) {
+            return redirect()->to('/admin/questions')->with('success', 'Pertanyaan berhasil dihapus');
+        } else {
+            return redirect()->to('/admin/questions')->with('error', 'Gagal menghapus pertanyaan');
+        }
+    }
+    
+    // Preview questions
+    public function previewQuestions()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->request->getGet('type') ?? 'riasec';
+        
+        $questionModel = new \App\Models\QuestionModel();
+        $questions = $questionModel->where('type', $type)
+                                 ->where('is_active', 1)
+                                 ->orderBy('order_number', 'ASC')
+                                 ->findAll();
+        
+        $data = [
+            'title' => 'Preview Pertanyaan',
+            'page_title' => 'Preview Pertanyaan ' . strtoupper($type),
+            'questions' => $questions,
+            'type' => $type
+        ];
+        
+        return view('admin/questions/preview', $data);
+    }
+    
+    // Toggle question status
+    public function toggleQuestionStatus($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $questionModel = new \App\Models\QuestionModel();
+        $question = $questionModel->find($id);
+        
+        if (!$question) {
+            return redirect()->to('/admin/questions')->with('error', 'Pertanyaan tidak ditemukan');
+        }
+        
+        $newStatus = $question['is_active'] ? 0 : 1;
+        $statusText = $newStatus ? 'diaktifkan' : 'dinonaktifkan';
+        
+        if ($questionModel->update($id, ['is_active' => $newStatus])) {
+            return redirect()->to('/admin/questions')->with('success', "Pertanyaan berhasil $statusText");
+        } else {
+            return redirect()->to('/admin/questions')->with('error', 'Gagal mengubah status pertanyaan');
+        }
     }
 } 

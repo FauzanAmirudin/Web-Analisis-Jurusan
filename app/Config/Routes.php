@@ -70,6 +70,17 @@ $routes->group('admin', ['filter' => 'admin'], function($routes) {
     $routes->post('users/adjust-credits/(:num)', 'AdminController::adjustCredits/$1');
     $routes->get('users/toggle-status/(:num)', 'AdminController::toggleStatus/$1');
     $routes->post('users/reset-password/(:num)', 'AdminController::resetPassword/$1');
+    
+    // Question Management Routes
+    $routes->get('questions', 'AdminController::questions');
+    $routes->get('questions/create', 'AdminController::createQuestion');
+    $routes->post('questions/store', 'AdminController::storeQuestion');
+    $routes->get('questions/edit/(:num)', 'AdminController::editQuestion/$1');
+    $routes->post('questions/update/(:num)', 'AdminController::updateQuestion/$1');
+    $routes->post('questions/delete/(:num)', 'AdminController::deleteQuestion/$1');
+    $routes->get('questions/preview', 'AdminController::previewQuestions');
+    $routes->get('questions/toggle-status/(:num)', 'AdminController::toggleQuestionStatus/$1');
+    
     $routes->get('get-csrf-token', 'AdminController::getCsrfToken');
 });
 
