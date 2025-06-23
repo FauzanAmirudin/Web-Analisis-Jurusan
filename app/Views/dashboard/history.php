@@ -121,10 +121,10 @@
                         <a href="javascript:void(0);" class="pdf-download-btn flex items-center text-gray-600 hover:text-gray-900 ml-3" data-id="<?= $item['id'] ?>">
                             <i class="fas fa-download mr-1"></i> <span>PDF</span>
                         </a>
-                        <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
+                        <!-- <a href="<?= site_url('dashboard/history/delete/'.$item['id']) ?>" 
                           class="flex items-center text-red-600 hover:text-red-800 delete-test-btn">
                             <i class="fas fa-trash mr-1"></i> <span>Hapus</span>
-                        </a>
+                        </a> -->
                     </div>
                 </div>
                 <?php endforeach; ?>

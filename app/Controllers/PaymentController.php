@@ -7,19 +7,20 @@ use App\Models\UserModel;
 class PaymentController extends BaseController
 {
     protected $userModel;
-
+    
     public function __construct()
     {
         $this->userModel = new UserModel();
     }
-
+    
     public function index()
     {
+        // Get current user data
         $userId = session()->get('user_id');
         $user = $this->userModel->find($userId);
         
         $data = [
-            'title' => 'Beli Kredit Tes - Analisis Jurusan',
+            'title' => 'Beli Kredit Tes',
             'user' => $user
         ];
         
@@ -28,30 +29,27 @@ class PaymentController extends BaseController
     
     public function processPayment()
     {
-        $userId = session()->get('user_id');
-        $paymentMethod = $this->request->getPost('payment_method');
-        $amount = (int)$this->request->getPost('amount');
-        
-        // In a real application, you would integrate with a payment gateway here
-        // For now, we'll just simulate a successful payment
-        
-        // Add credits to user account
-        $this->userModel->addTestCredits($userId, $amount);
-        
-        // Redirect back to dashboard with success message
-        return redirect()->to('/dashboard')->with('success', "Berhasil membeli $amount kredit tes baru!");
+        // This would typically handle real payment processing
+        // For now, redirect to simulate method
+        return redirect()->to('payment/simulate');
     }
     
-    // This is a temporary method for demonstration purposes
-    // In a real application, you would integrate with a payment gateway
     public function simulatePayment()
     {
+        // Get current user data
         $userId = session()->get('user_id');
+        $user = $this->userModel->find($userId);
         
-        // Add 1 credit to user account
-        $this->userModel->addTestCredits($userId, 1);
+        if ($user) {
+            // Add 1 credit to the user's account
+            $this->userModel->update($userId, [
+                'test_credits' => $user['test_credits'] + 1
+            ]);
+            
+            // Set success message
+            session()->setFlashdata('success', 'Berhasil menambahkan 1 kredit tes.');
+        }
         
-        // Redirect back to dashboard with success message
-        return redirect()->to('/dashboard')->with('success', "Berhasil membeli 1 kredit tes baru!");
+        return redirect()->to('/dashboard');
     }
 } 

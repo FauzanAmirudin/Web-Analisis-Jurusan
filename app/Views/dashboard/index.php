@@ -282,7 +282,7 @@
                                     <i class="fas fa-arrow-right"></i>
                                 </a>
                             <?php elseif ($session['status'] === 'completed'): ?>
-                                <a href="/dashboard/history/<?= $session['id'] ?>" class="ml-3 text-primary hover:text-red-800">
+                                <a href="/dashboard/history/<?= $session['result_id'] ?? $session['id'] ?>" class="ml-3 text-primary hover:text-red-800">
                                     <i class="fas fa-eye"></i>
                                 </a>
                             <?php endif; ?>

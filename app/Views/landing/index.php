@@ -24,15 +24,63 @@
                 
                 <!-- Desktop menu -->
                 <div class="hidden sm:flex items-center space-x-4">
+                    <?php if (isset($is_logged_in) && $is_logged_in): ?>
+                    <!-- User is logged in - Show profile dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" 
+                                class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-custom">
+                            <img class="h-8 w-8 rounded-full object-cover border-2 border-gray-200" 
+                                 src="<?= isset($user['profile_picture']) && $user['profile_picture'] ? '/uploads/profiles/' . $user['profile_picture'] : 'https://ui-avatars.com/api/?name=' . urlencode($user['full_name'] ?? 'User') . '&background=7C0A02&color=fff' ?>" 
+                                 alt="Profile">
+                            <span class="ml-2 text-gray-700 font-medium"><?= $user['full_name'] ?? 'User' ?></span>
+                            <i class="fas fa-chevron-down ml-1 text-gray-400"></i>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" x-transition
+                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dropdown-menu">
+                            <div class="py-1">
+                                <a href="/dashboard" 
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-custom">
+                                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                                </a>
+                                <a href="/dashboard/profile" 
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-custom">
+                                    <i class="fas fa-user mr-2"></i>Profil
+                                </a>
+                                <a href="/auth/logout" 
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-custom"
+                                   onclick="return confirm('Yakin ingin logout?')">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <!-- User is not logged in - Show login/register buttons -->
                     <a href="/auth/login" class="text-gray-700 hover:text-primary font-medium transition-custom text-base">Masuk</a>
                     <a href="/auth/register" class="bg-gradient-to-r from-primary to-red-700 text-white px-6 py-2 rounded-lg hover:shadow-lg hover:from-red-700 hover:to-primary transition-custom btn-hover text-base">Daftar</a>
+                    <?php endif; ?>
                 </div>
             </div>
             
             <!-- Mobile menu -->
             <div class="mobile-menu hidden sm:hidden pb-2">
+                <?php if (isset($is_logged_in) && $is_logged_in): ?>
+                <!-- User is logged in - Mobile view -->
+                <a href="/dashboard" class="block py-2 text-gray-700 hover:text-primary font-medium transition-custom">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+                <a href="/dashboard/profile" class="block py-2 text-gray-700 hover:text-primary font-medium transition-custom">
+                    <i class="fas fa-user mr-2"></i>Profil
+                </a>
+                <a href="/auth/logout" class="block py-2 text-primary font-medium hover:text-red-700 transition-custom" onclick="return confirm('Yakin ingin logout?')">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+                <?php else: ?>
+                <!-- User is not logged in - Mobile view -->
                 <a href="/auth/login" class="block py-2 text-gray-700 hover:text-primary font-medium transition-custom">Masuk</a>
                 <a href="/auth/register" class="block py-2 text-primary font-medium hover:text-red-700 transition-custom">Daftar</a>
+                <?php endif; ?>
             </div>
         </div>
     </header>
@@ -182,9 +230,9 @@
                     <div class="relative w-48 sm:w-56 md:w-72 transform transition-transform hover:scale-105 duration-500 lg:mr-0">
                         <div class="absolute inset-0 bg-primary/10 rounded-lg transform rotate-3"></div>
                         <div class="shadow-2xl rounded-lg overflow-hidden relative z-10">
-                            <img src="/images/ebook.png" alt="E-Book Analisis Minat" class="w-full h-auto">
+                            <img src="/images/cover-ebook.jpg" alt="E-Book Analisis Minat" class="w-full h-auto">
                         </div>
-                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center text-primary font-bold z-20">
+                        <div class="absolute -bottom-4 -left-4 w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center text-primary font-bold z-20">
                             <span class="text-sm">GRATIS</span>
                         </div>
                     </div>
@@ -209,7 +257,7 @@
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle text-primary mt-1 mr-3"></i>
-                            <span class="text-gray-700">Tips memaksimalkan potensi berdasarkan tipe MBTI</span>
+                            <span class="text-gray-700">Tips memaksimalkan potensi berdasarkan tipe kepribadian Anda</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle text-primary mt-1 mr-3"></i>
@@ -280,7 +328,6 @@
                     <ul class="space-y-2 sm:space-y-3 text-sm sm:text-base">
                         <li><a href="#" class="text-gray-400 hover:text-white transition-custom">Tes Kepribadian</a></li>
                         <li><a href="#" class="text-gray-400 hover:text-white transition-custom">Rekomendasi Jurusan</a></li>
-                        <li><a href="#" class="text-gray-400 hover:text-white transition-custom">Konsultasi Karier</a></li>
                     </ul>
                 </div>
                 <div>
@@ -288,11 +335,11 @@
                     <ul class="space-y-2 sm:space-y-3 text-sm sm:text-base">
                         <li class="flex items-start">
                             <i class="fas fa-envelope mt-1 mr-2 sm:mr-3"></i> 
-                            <span>info@lampungcerdas.com</span>
+                            <span>it@lampungcerdas.com</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-phone mt-1 mr-2 sm:mr-3"></i>
-                            <span>(0721) 1234-5678</span>
+                            <span>+62 811-737-1015</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-map-marker-alt mt-1 mr-2 sm:mr-3"></i>

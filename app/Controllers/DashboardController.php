@@ -32,14 +32,28 @@ class DashboardController extends BaseController
         // Get all user sessions
         $userSessions = $this->testSessionModel->getUserSessions($userId, 100); // Increased limit to get all sessions
         
+        // Get all user results
+        $userResults = $this->testResultModel->getUserResults($userId, 100);
+        
+        // Create a map of session_id to result_id for quick lookups
+        $resultMap = [];
+        foreach ($userResults as $result) {
+            $resultMap[$result['session_id']] = $result['id'];
+        }
+        
         // Count sessions by status
         $totalTests = count($userSessions);
         $completedTests = 0;
         $inProgressTests = 0;
         
-        foreach ($userSessions as $session) {
+        // Add result_id to each completed session
+        foreach ($userSessions as &$session) {
             if ($session['status'] === 'completed') {
                 $completedTests++;
+                // Add result_id to the session if it exists
+                if (isset($resultMap[$session['id']])) {
+                    $session['result_id'] = $resultMap[$session['id']];
+                }
             } elseif ($session['status'] === 'in_progress') {
                 $inProgressTests++;
             }

@@ -38,7 +38,7 @@
                 Pilih Paket
             </h2>
             
-            <form action="/payment/process" method="post" class="space-y-6">
+            <form action="/payment/processPayment" method="post" class="space-y-6">
                 <?= csrf_field() ?>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -110,7 +110,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-red-700 hover:from-red-700 hover:to-primary text-white py-3 rounded-lg font-medium transition-all duration-200">
+                    <button type="submit" disabled class="w-full bg-gray-400 text-white py-3 rounded-lg font-medium cursor-not-allowed opacity-70">
                         Lanjutkan Pembayaran
                     </button>
                     
@@ -119,17 +119,6 @@
                     </p>
                 </div>
             </form>
-            
-            <!-- For demo purposes only - simulate payment -->
-            <div class="mt-6 pt-6 border-t border-gray-100">
-                <p class="text-sm text-gray-500 mb-4">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Untuk keperluan demo, Anda dapat menggunakan tombol di bawah ini untuk mendapatkan kredit tes tambahan tanpa pembayaran nyata.
-                </p>
-                <a href="/payment/simulate" class="block w-full bg-gray-100 text-gray-700 text-center py-2 rounded-lg hover:bg-gray-200 transition-all">
-                    Simulasi Pembayaran (Tambah 1 Kredit)
-                </a>
-            </div>
         </div>
     </div>
 </div>
