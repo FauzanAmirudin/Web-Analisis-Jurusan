@@ -1114,26 +1114,26 @@ class AdminController extends BaseController
     {
         if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
         
-        // Check if the personality type has dependencies (test results)
-        // Get the personality type data first
         $type = $this->personalityModel->find($id);
+        
         if (!$type) {
-            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan.');
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan');
         }
         
-        $combinedCode = $type['riasec_code'] . $type['mbti_code']; // Format yang digunakan di test_results
-        $testResultCount = $this->db->table('test_results')
-            ->where('personality_type', $combinedCode)
+        // Periksa apakah tipe kepribadian sedang digunakan
+        $testResults = $this->db->table('test_results')
+            ->where('personality_type_id', $id)
             ->countAllResults();
         
-        if ($testResultCount > 0) {
-            return redirect()->to('/admin/personality-types')->with('error', 'Tidak dapat menghapus tipe kepribadian karena masih digunakan dalam hasil tes.');
+        if ($testResults > 0) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian ini sedang digunakan dalam hasil tes dan tidak dapat dihapus');
         }
         
-        // Delete major mappings first
-        $this->mappingModel->where('personality_type_id', $id)->delete();
+        // Hapus mapping dengan jurusan
+        $this->db->table('personality_major_mapping')
+            ->where('personality_type_id', $id)
+            ->delete();
         
-        // Then delete the personality type
         if ($this->personalityModel->delete($id)) {
             return redirect()->to('/admin/personality-types')->with('success', 'Tipe kepribadian berhasil dihapus');
         } else {
@@ -1149,21 +1149,388 @@ class AdminController extends BaseController
         $type = $this->personalityModel->find($id);
         
         if (!$type) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Tipe kepribadian tidak ditemukan']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tipe kepribadian tidak ditemukan'
+            ]);
         }
         
-        $currentStatus = $type['is_active'];
-        $newStatus = $currentStatus ? 0 : 1;
+        $newStatus = $type['is_active'] ? 0 : 1;
         
         if ($this->personalityModel->update($id, ['is_active' => $newStatus])) {
-            $statusText = $newStatus ? 'diaktifkan' : 'dinonaktifkan';
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Tipe kepribadian berhasil ' . $statusText,
-                'new_status' => $newStatus
+                'message' => 'Status tipe kepribadian berhasil diperbarui'
             ]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal mengubah status tipe kepribadian']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memperbarui status tipe kepribadian'
+            ]);
+        }
+    }
+
+    // MANAJEMEN JURUSAN (MAJORS)
+    
+    public function majors()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $search = $this->request->getGet('search');
+        $status = $this->request->getGet('status');
+        $category = $this->request->getGet('category');
+        $page = $this->request->getGet('page') ?? 1;
+        
+        // Debug - log data untuk memastikan ada di database
+        log_message('debug', 'Mengambil data jurusan...');
+        
+        // Gunakan findAll langsung agar bypass query builder yang mungkin bermasalah
+        $allMajors = $this->majorModel->findAll();
+        log_message('debug', 'Total jurusan di database: ' . count($allMajors));
+        
+        $builder = $this->majorModel->builder();
+        
+        // Apply filters
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('name', $search)
+                ->orLike('description', $search)
+                ->orLike('career_prospects', $search)
+                ->groupEnd();
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder->where('is_active', $status);
+        }
+        
+        if (!empty($category)) {
+            $builder->where('riasec_match', $category);
+        }
+        
+        // Perbaikan: Gunakan query sederhana untuk menghitung rekomendasi
+        // Karena JSON_CONTAINS mungkin tidak didukung di semua versi MySQL/MariaDB
+        $builder->select('majors.*');
+        
+        // Pagination
+        $perPage = 10;
+        $totalMajors = $builder->countAllResults(false);
+        $majors = $builder->orderBy('id', 'DESC') // Ubah order by ke id DESC agar data terbaru muncul paling atas
+            ->limit($perPage, ($page - 1) * $perPage)
+            ->get()->getResultArray();
+        
+        // Tambahkan recommendation_count ke setiap major
+        foreach ($majors as &$major) {
+            // Hitung rekomendasi menggunakan query biasa
+            $recommendationCount = $this->db->table('test_results')
+                ->where("recommended_majors LIKE '%\"" . $major['id'] . "\"%'")
+                ->countAllResults();
+            
+            $major['recommendation_count'] = $recommendationCount;
+        }
+        
+        $pager = \Config\Services::pager();
+        $pager_links = $pager->makeLinks($page, $perPage, $totalMajors, 'default_full');
+        
+        // Get all personality types for personality-major mapping
+        $personalityTypes = $this->personalityModel->findAll();
+        
+        $data = [
+            'title' => 'Manajemen Jurusan',
+            'page_title' => 'Manajemen Jurusan',
+            'majors' => $majors,
+            'pager' => $pager_links,
+            'total' => $totalMajors,
+            'search' => $search,
+            'status' => $status,
+            'category' => $category,
+            'current_page' => $page,
+            'personality_types' => $personalityTypes,
+        ];
+        
+        return view('admin/majors/index', $data);
+    }
+    
+    public function createMajor()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $personalityTypes = $this->personalityModel->findAll();
+        
+        // Memeriksa apakah ada input sebelumnya yang disimpan
+        $oldInput = session()->getFlashdata('input');
+        
+        $data = [
+            'title' => 'Tambah Jurusan Baru',
+            'page_title' => 'Tambah Jurusan Baru',
+            'validation' => \Config\Services::validation(),
+            'personality_types' => $personalityTypes,
+        ];
+        
+        // Menambahkan old input ke data jika ada
+        if ($oldInput) {
+            $data['oldInput'] = $oldInput;
+        }
+        
+        return view('admin/majors/create', $data);
+    }
+    
+    public function storeMajor()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Validate input
+        $rules = [
+            'name' => 'required|min_length[3]|max_length[255]',
+            'description' => 'required',
+            'career_prospects' => 'required',
+            'riasec_match' => 'required',
+            'mbti_match' => 'required',
+            'is_active' => 'required|in_list[0,1]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            // Memastikan tampilan validasi berfungsi dan mengembalikan CSRF yang valid
+            $personalityTypes = $this->personalityModel->findAll();
+            
+            // Menyimpan input yang sudah dimasukkan sebelumnya
+            session()->setFlashdata('input', $this->request->getPost());
+            
+            return view('admin/majors/create', [
+                'title' => 'Tambah Jurusan Baru',
+                'page_title' => 'Tambah Jurusan Baru',
+                'validation' => \Config\Services::validation(),
+                'personality_types' => $personalityTypes,
+            ]);
+        }
+        
+        // Prepare major data
+        $majorData = [
+            'name' => $this->request->getPost('name'),
+            'description' => $this->request->getPost('description'),
+            'full_description' => $this->request->getPost('full_description') ?? null,
+            'core_subjects' => $this->request->getPost('core_subjects') ?? null,
+            'degree_types' => $this->request->getPost('degree_types') ?? null,
+            'study_duration' => $this->request->getPost('study_duration') ?? null,
+            'career_prospects' => $this->request->getPost('career_prospects'),
+            'industry_sectors' => $this->request->getPost('industry_sectors') ?? null,
+            'future_trends' => $this->request->getPost('future_trends') ?? null,
+            'compatibility_reason' => $this->request->getPost('compatibility_reason') ?? null,
+            'riasec_match' => $this->request->getPost('riasec_match'),
+            'mbti_match' => $this->request->getPost('mbti_match'),
+            'is_active' => $this->request->getPost('is_active'),
+        ];
+        
+        // Log data yang akan disimpan
+        log_message('debug', 'Menyimpan data jurusan baru: ' . json_encode($majorData));
+        
+        // Insert major menggunakan try-catch untuk menangkap error dengan lebih baik
+        try {
+            // Simpan data major tanpa transaksi terlebih dahulu untuk memastikan data tersimpan
+            $this->majorModel->insert($majorData);
+            $majorId = $this->majorModel->insertID;
+            
+            if (!$majorId) {
+                log_message('error', 'Gagal menyimpan data jurusan: insertID kosong');
+                return redirect()->back()->withInput()->with('error', 'Gagal menambahkan jurusan. Database tidak mengembalikan ID.');
+            }
+            
+            log_message('debug', 'Jurusan berhasil disimpan dengan ID: ' . $majorId);
+            
+            // Simpan data personality mapping
+            $personalityMappings = $this->request->getPost('personality_mappings') ?? [];
+            foreach ($personalityMappings as $personalityTypeId => $match_percentage) {
+                if (!empty($match_percentage) && is_numeric($match_percentage)) {
+                    $this->mappingModel->insert([
+                        'personality_type_id' => $personalityTypeId,
+                        'major_id' => $majorId,
+                        'match_percentage' => $match_percentage
+                    ]);
+                }
+            }
+            
+            // Tambahkan flush cache untuk memastikan data terbaru diambil saat redirect
+            $this->majorModel->purgeCache();
+            
+            // Tampilkan data jurusan setelah disimpan untuk debugging
+            $savedMajor = $this->majorModel->find($majorId);
+            log_message('debug', 'Data jurusan setelah disimpan: ' . json_encode($savedMajor));
+            
+            return redirect()->to('/admin/majors')->with('success', 'Jurusan baru berhasil ditambahkan');
+        } catch (\Exception $e) {
+            log_message('error', 'Error adding major: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan jurusan: ' . $e->getMessage());
+        }
+    }
+    
+    public function editMajor($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $major = $this->majorModel->find($id);
+        
+        if (!$major) {
+            return redirect()->to('/admin/majors')->with('error', 'Jurusan tidak ditemukan');
+        }
+        
+        // Get personality type mappings
+        $mappings = $this->mappingModel->where('major_id', $id)->findAll();
+        $personalityMappings = [];
+        foreach ($mappings as $mapping) {
+            $personalityMappings[$mapping['personality_type_id']] = $mapping['match_percentage'] ?? 0;
+        }
+        
+        $personalityTypes = $this->personalityModel->findAll();
+        
+        $data = [
+            'title' => 'Edit Jurusan',
+            'page_title' => 'Edit Jurusan',
+            'major' => $major,
+            'personality_mappings' => $personalityMappings,
+            'personality_types' => $personalityTypes,
+            'validation' => \Config\Services::validation(),
+        ];
+        
+        return view('admin/majors/edit', $data);
+    }
+    
+    public function updateMajor($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $major = $this->majorModel->find($id);
+        
+        if (!$major) {
+            return redirect()->to('/admin/majors')->with('error', 'Jurusan tidak ditemukan');
+        }
+        
+        // Validate input
+        $rules = [
+            'name' => 'required|min_length[3]|max_length[255]',
+            'description' => 'required',
+            'career_prospects' => 'required',
+            'riasec_match' => 'required',
+            'mbti_match' => 'required',
+            'is_active' => 'required|in_list[0,1]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Prepare major data
+        $majorData = [
+            'name' => $this->request->getPost('name'),
+            'description' => $this->request->getPost('description'),
+            'full_description' => $this->request->getPost('full_description') ?? null,
+            'core_subjects' => $this->request->getPost('core_subjects') ?? null,
+            'degree_types' => $this->request->getPost('degree_types') ?? null,
+            'study_duration' => $this->request->getPost('study_duration') ?? null,
+            'career_prospects' => $this->request->getPost('career_prospects'),
+            'industry_sectors' => $this->request->getPost('industry_sectors') ?? null,
+            'future_trends' => $this->request->getPost('future_trends') ?? null,
+            'compatibility_reason' => $this->request->getPost('compatibility_reason') ?? null,
+            'riasec_match' => $this->request->getPost('riasec_match'),
+            'mbti_match' => $this->request->getPost('mbti_match'),
+            'is_active' => $this->request->getPost('is_active'),
+        ];
+        
+        // Update in transaction
+        $db = \Config\Database::connect();
+        $db->transBegin();
+        
+        try {
+            // Update major data
+            $this->majorModel->update($id, $majorData);
+            
+            // Delete existing mappings for this major
+            $this->mappingModel->where('major_id', $id)->delete();
+            
+            // Insert new personality_major_mappings if provided
+            $personalityMappings = $this->request->getPost('personality_mappings') ?? [];
+            foreach ($personalityMappings as $personalityTypeId => $match_percentage) {
+                if (!empty($match_percentage) && is_numeric($match_percentage)) {
+                    $this->mappingModel->insert([
+                        'personality_type_id' => $personalityTypeId,
+                        'major_id' => $id,
+                        'match_percentage' => $match_percentage
+                    ]);
+                }
+            }
+            
+            $db->transCommit();
+            return redirect()->to('/admin/majors')->with('success', 'Jurusan berhasil diperbarui');
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Error updating major: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui jurusan. Silakan coba lagi.');
+        }
+    }
+    
+    public function deleteMajor($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $major = $this->majorModel->find($id);
+        
+        if (!$major) {
+            return redirect()->to('/admin/majors')->with('error', 'Jurusan tidak ditemukan');
+        }
+        
+        // Periksa apakah jurusan sedang digunakan
+        $testResults = $this->db->table('test_results')
+            ->where("recommended_majors LIKE '%\"" . $id . "\"%'")
+            ->countAllResults();
+        
+        if ($testResults > 0) {
+            return redirect()->to('/admin/majors')->with('error', 'Jurusan ini sedang digunakan dalam hasil tes dan tidak dapat dihapus');
+        }
+        
+        // Hapus mapping terlebih dahulu
+        $this->mappingModel->where('major_id', $id)->delete();
+        
+        if ($this->majorModel->delete($id)) {
+            return redirect()->to('/admin/majors')->with('success', 'Jurusan berhasil dihapus');
+        } else {
+            return redirect()->to('/admin/majors')->with('error', 'Gagal menghapus jurusan');
+        }
+    }
+    
+    public function toggleMajorStatus($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Memeriksa CSRF token
+        $csrfName = csrf_token();
+        $csrfHash = csrf_hash();
+        
+        // Set CSRF token baru ke response header
+        $this->response->setHeader('X-CSRF-TOKEN', $csrfHash);
+        
+        $major = $this->majorModel->find($id);
+        
+        if (!$major) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Jurusan tidak ditemukan',
+                'csrfToken' => $csrfHash
+            ]);
+        }
+        
+        $newStatus = $major['is_active'] ? 0 : 1;
+        
+        if ($this->majorModel->update($id, ['is_active' => $newStatus])) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Status jurusan berhasil diperbarui',
+                'csrfToken' => $csrfHash
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memperbarui status jurusan',
+                'csrfToken' => $csrfHash
+            ]);
         }
     }
 } 

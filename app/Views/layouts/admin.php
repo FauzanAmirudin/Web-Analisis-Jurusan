@@ -137,6 +137,11 @@
                         <span>Tipe Kepribadian</span>
                     </a>
                     
+                    <a href="/admin/majors" class="flex items-center px-4 py-3 mb-1 transition-all rounded-lg <?= strpos(current_url(), '/admin/majors') !== false ? 'bg-red-100 text-red-900' : 'text-gray-600 hover:bg-gray-50' ?>">
+                        <i class="fas fa-graduation-cap w-6 text-center mr-3"></i>
+                        <span>Manajemen Jurusan</span>
+                    </a>
+                    
                     <a href="/dashboard" 
                        class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-custom">
                         <i class="fas fa-chevron-left mr-3"></i>

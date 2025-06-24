@@ -91,6 +91,15 @@ $routes->group('admin', ['filter' => 'admin'], function($routes) {
     $routes->post('personality-types/delete/(:num)', 'AdminController::deletePersonalityType/$1');
     $routes->get('personality-types/toggle-status/(:num)', 'AdminController::togglePersonalityTypeStatus/$1');
     
+    // Major Management Routes
+    $routes->get('majors', 'AdminController::majors');
+    $routes->get('majors/create', 'AdminController::createMajor');
+    $routes->post('majors/store', 'AdminController::storeMajor');
+    $routes->get('majors/edit/(:num)', 'AdminController::editMajor/$1');
+    $routes->post('majors/update/(:num)', 'AdminController::updateMajor/$1');
+    $routes->post('majors/delete/(:num)', 'AdminController::deleteMajor/$1');
+    $routes->get('majors/toggle-status/(:num)', 'AdminController::toggleMajorStatus/$1');
+    
     $routes->get('get-csrf-token', 'AdminController::getCsrfToken');
 });
 

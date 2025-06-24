@@ -25,6 +25,12 @@ class CreatePersonalityMajorMapping extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
             ],
+            'match_percentage' => [
+                'type'       => 'INT',
+                'constraint' => 3,
+                'unsigned'   => true,
+                'default'    => 0,
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,

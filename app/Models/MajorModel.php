@@ -25,6 +25,13 @@ class MajorModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
+    // Method untuk membersihkan cache
+    public function purgeCache()
+    {
+        cache()->clean();
+        return $this;
+    }
+
     public function getRecommendedMajors($personalityType)
     {
         $parts = explode('-', $personalityType);

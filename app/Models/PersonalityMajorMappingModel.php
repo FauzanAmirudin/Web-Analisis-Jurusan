@@ -10,7 +10,7 @@ class PersonalityMajorMappingModel extends Model
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
-    protected $allowedFields = ['personality_type_id', 'major_id'];
+    protected $allowedFields = ['personality_type_id', 'major_id', 'match_percentage'];
     
     // Timestamps
     protected $useTimestamps = true;
