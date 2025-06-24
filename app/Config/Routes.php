@@ -81,6 +81,16 @@ $routes->group('admin', ['filter' => 'admin'], function($routes) {
     $routes->get('questions/preview', 'AdminController::previewQuestions');
     $routes->get('questions/toggle-status/(:num)', 'AdminController::toggleQuestionStatus/$1');
     
+    // Personality Type Management Routes
+    $routes->get('personality-types', 'AdminController::personalityTypes');
+    $routes->get('personality-types/create', 'AdminController::createPersonalityType');
+    $routes->post('personality-types/store', 'AdminController::storePersonalityType');
+    $routes->get('personality-types/show/(:num)', 'AdminController::showPersonalityType/$1');
+    $routes->get('personality-types/edit/(:num)', 'AdminController::editPersonalityType/$1');
+    $routes->post('personality-types/update/(:num)', 'AdminController::updatePersonalityType/$1');
+    $routes->post('personality-types/delete/(:num)', 'AdminController::deletePersonalityType/$1');
+    $routes->get('personality-types/toggle-status/(:num)', 'AdminController::togglePersonalityTypeStatus/$1');
+    
     $routes->get('get-csrf-token', 'AdminController::getCsrfToken');
 });
 

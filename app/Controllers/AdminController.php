@@ -6,6 +6,9 @@ use App\Models\UserModel;
 use App\Models\UserActivityModel;
 use App\Models\QuestionModel;
 use App\Models\TestAnswerModel;
+use App\Models\PersonalityTypeModel;
+use App\Models\MajorModel;
+use App\Models\PersonalityMajorMappingModel;
 
 class AdminController extends BaseController
 {
@@ -14,6 +17,9 @@ class AdminController extends BaseController
     protected $db;
     protected $questionModel;
     protected $answerModel;
+    protected $personalityModel;
+    protected $majorModel;
+    protected $mappingModel;
     
     public function __construct()
     {
@@ -22,6 +28,9 @@ class AdminController extends BaseController
         $this->db = \Config\Database::connect();
         $this->questionModel = new QuestionModel();
         $this->answerModel = new TestAnswerModel();
+        $this->personalityModel = new PersonalityTypeModel();
+        $this->majorModel = new MajorModel();
+        $this->mappingModel = new PersonalityMajorMappingModel();
     }
     
     // Middleware to check if user is admin
@@ -803,6 +812,358 @@ class AdminController extends BaseController
             return redirect()->to('/admin/questions')->with('success', "Pertanyaan berhasil $statusText");
         } else {
             return redirect()->to('/admin/questions')->with('error', 'Gagal mengubah status pertanyaan');
+        }
+    }
+
+    // PERSONALITY TYPE MANAGEMENT
+
+    // List all personality types
+    public function personalityTypes()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $search = $this->request->getGet('search');
+        $status = $this->request->getGet('status');
+        $page = $this->request->getGet('page') ?? 1;
+        
+        $builder = $this->personalityModel->builder();
+        
+        // Apply filters
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('personality_name', $search)
+                ->orLike('riasec_code', $search)
+                ->orLike('mbti_code', $search)
+                ->groupEnd();
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder->where('is_active', $status);
+        }
+        
+        // Pagination
+        $perPage = 10;
+        $totalTypes = $builder->countAllResults(false);
+        $types = $builder->orderBy('riasec_code', 'ASC')
+            ->orderBy('mbti_code', 'ASC')
+            ->limit($perPage, ($page - 1) * $perPage)
+            ->get()->getResultArray();
+        
+        $pager = \Config\Services::pager();
+        $pager_links = $pager->makeLinks($page, $perPage, $totalTypes, 'default_full');
+        
+        // Get usage statistics (count of test results per personality type)
+        // Tabel test_results menggunakan kolom personality_type, bukan personality_type_id
+        $usageStats = [];
+        
+        foreach ($types as $type) {
+            // Hitung berapa kali tipe kepribadian ini muncul di test_results
+            $combinedCode = $type['riasec_code'] . $type['mbti_code']; // Format yang digunakan di test_results
+            $count = $this->db->table('test_results')
+                ->where('personality_type', $combinedCode)
+                ->countAllResults();
+                
+            $usageStats[$type['id']] = $count;
+        }
+        
+        $data = [
+            'title' => 'Manajemen Tipe Kepribadian',
+            'page_title' => 'Manajemen Tipe Kepribadian',
+            'types' => $types,
+            'pager' => $pager_links,
+            'total' => $totalTypes,
+            'search' => $search,
+            'status' => $status,
+            'current_page' => $page,
+            'usage_stats' => $usageStats,
+        ];
+        
+        return view('admin/personality_types/index', $data);
+    }
+
+    // Create new personality type form
+    public function createPersonalityType()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Get majors for recommendation mapping
+        $majors = $this->majorModel->findAll();
+        
+        $data = [
+            'title' => 'Tambah Tipe Kepribadian Baru',
+            'page_title' => 'Tambah Tipe Kepribadian Baru',
+            'validation' => \Config\Services::validation(),
+            'majors' => $majors,
+        ];
+        
+        return view('admin/personality_types/create', $data);
+    }
+
+    // Store new personality type
+    public function storePersonalityType()
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Validate input
+        $rules = [
+            'riasec_code' => 'required|min_length[1]|max_length[10]',
+            'mbti_code' => 'required|min_length[1]|max_length[10]',
+            'personality_name' => 'required|min_length[3]|max_length[100]',
+            'personality_description' => 'required',
+            'introvert_extrovert' => 'required|in_list[I,E]',
+            'is_active' => 'required|in_list[0,1]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Prepare strengths and development areas as arrays
+        $strengths = $this->request->getPost('strengths') ? explode("\n", $this->request->getPost('strengths')) : [];
+        $strengths = array_map('trim', $strengths);
+        $strengths = array_filter($strengths, function($value) { return $value !== ''; });
+        
+        $development_areas = $this->request->getPost('development_areas') ? explode("\n", $this->request->getPost('development_areas')) : [];
+        $development_areas = array_map('trim', $development_areas);
+        $development_areas = array_filter($development_areas, function($value) { return $value !== ''; });
+        
+        // Prepare personality type data
+        $typeData = [
+            'riasec_code' => $this->request->getPost('riasec_code'),
+            'mbti_code' => $this->request->getPost('mbti_code'),
+            'personality_name' => $this->request->getPost('personality_name'),
+            'personality_description' => $this->request->getPost('personality_description'),
+            'strengths' => $strengths,
+            'development_areas' => $development_areas,
+            'introvert_extrovert' => $this->request->getPost('introvert_extrovert'),
+            'is_active' => $this->request->getPost('is_active'),
+        ];
+        
+        // Insert personality type
+        $typeId = $this->personalityModel->insert($typeData);
+        
+        if ($typeId) {
+            // Handle major recommendations
+            $majorRecommendations = $this->request->getPost('major_recommendations');
+            if (!empty($majorRecommendations)) {
+                // Proses penyimpanan rekomendasi jurusan menggunakan model
+                foreach ($majorRecommendations as $majorId) {
+                    $this->mappingModel->insert([
+                        'personality_type_id' => $typeId,
+                        'major_id' => $majorId
+                    ]);
+                }
+            }
+            
+            return redirect()->to('/admin/personality-types')->with('success', 'Tipe kepribadian baru berhasil ditambahkan');
+        } else {
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan tipe kepribadian. Silakan coba lagi.');
+        }
+    }
+
+    // Show personality type details
+    public function showPersonalityType($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->personalityModel->find($id);
+        
+        if (!$type) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan');
+        }
+        
+        // Get statistics
+        // Tabel test_results menggunakan kolom personality_type, bukan personality_type_id
+        $combinedCode = $type['riasec_code'] . $type['mbti_code']; // Format yang digunakan di test_results
+        $testCount = $this->db->table('test_results')
+            ->where('personality_type', $combinedCode)
+            ->countAllResults();
+        
+        // Get recommended majors for this personality type
+        $recommendedMajors = $this->db->table('personality_major_mapping pm')
+            ->select('m.id, m.name, m.description')
+            ->join('majors m', 'pm.major_id = m.id')
+            ->where('pm.personality_type_id', $id)
+            ->get()->getResultArray();
+        
+        $data = [
+            'title' => 'Detail Tipe Kepribadian',
+            'page_title' => 'Detail Tipe Kepribadian',
+            'type' => $type,
+            'test_count' => $testCount,
+            'recommended_majors' => $recommendedMajors,
+        ];
+        
+        return view('admin/personality_types/show', $data);
+    }
+
+    // Edit personality type form
+    public function editPersonalityType($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->personalityModel->find($id);
+        
+        if (!$type) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan');
+        }
+        
+        // Get all majors
+        $majors = $this->majorModel->findAll();
+        
+        // Get currently recommended majors for this personality type
+        $recommendedMajorIds = $this->mappingModel
+            ->select('major_id')
+            ->where('personality_type_id', $id)
+            ->findAll();
+        
+        $selectedMajors = array_column($recommendedMajorIds, 'major_id');
+        
+        // Process strengths and development areas from JSON to string format for form
+        $strengths = $this->personalityModel->getStrengthsArray($type);
+        $developmentAreas = $this->personalityModel->getDevelopmentAreasArray($type);
+        
+        $strengthsText = implode("\n", $strengths);
+        $developmentAreasText = implode("\n", $developmentAreas);
+        
+        $data = [
+            'title' => 'Edit Tipe Kepribadian',
+            'page_title' => 'Edit Tipe Kepribadian',
+            'type' => $type,
+            'strengths_text' => $strengthsText,
+            'development_areas_text' => $developmentAreasText,
+            'majors' => $majors,
+            'selected_majors' => $selectedMajors,
+            'validation' => \Config\Services::validation(),
+        ];
+        
+        return view('admin/personality_types/edit', $data);
+    }
+
+    // Update personality type
+    public function updatePersonalityType($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->personalityModel->find($id);
+        
+        if (!$type) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan');
+        }
+        
+        // Validate input
+        $rules = [
+            'riasec_code' => 'required|min_length[1]|max_length[10]',
+            'mbti_code' => 'required|min_length[1]|max_length[10]',
+            'personality_name' => 'required|min_length[3]|max_length[100]',
+            'personality_description' => 'required',
+            'introvert_extrovert' => 'required|in_list[I,E]',
+            'is_active' => 'required|in_list[0,1]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Prepare strengths and development areas as arrays
+        $strengths = $this->request->getPost('strengths') ? explode("\n", $this->request->getPost('strengths')) : [];
+        $strengths = array_map('trim', $strengths);
+        $strengths = array_filter($strengths, function($value) { return $value !== ''; });
+        
+        $development_areas = $this->request->getPost('development_areas') ? explode("\n", $this->request->getPost('development_areas')) : [];
+        $development_areas = array_map('trim', $development_areas);
+        $development_areas = array_filter($development_areas, function($value) { return $value !== ''; });
+        
+        // Prepare personality type data
+        $typeData = [
+            'riasec_code' => $this->request->getPost('riasec_code'),
+            'mbti_code' => $this->request->getPost('mbti_code'),
+            'personality_name' => $this->request->getPost('personality_name'),
+            'personality_description' => $this->request->getPost('personality_description'),
+            'strengths' => $strengths,
+            'development_areas' => $development_areas,
+            'introvert_extrovert' => $this->request->getPost('introvert_extrovert'),
+            'is_active' => $this->request->getPost('is_active'),
+        ];
+        
+        // Update personality type
+        if ($this->personalityModel->update($id, $typeData)) {
+            // Update major recommendations
+            // First, delete existing mappings
+            $this->mappingModel->where('personality_type_id', $id)->delete();
+            
+            // Then insert new mappings
+            $majorRecommendations = $this->request->getPost('major_recommendations');
+            if (!empty($majorRecommendations)) {
+                foreach ($majorRecommendations as $majorId) {
+                    $this->mappingModel->insert([
+                        'personality_type_id' => $id,
+                        'major_id' => $majorId
+                    ]);
+                }
+            }
+            
+            return redirect()->to('/admin/personality-types')->with('success', 'Tipe kepribadian berhasil diperbarui');
+        } else {
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui tipe kepribadian. Silakan coba lagi.');
+        }
+    }
+
+    // Delete personality type
+    public function deletePersonalityType($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        // Check if the personality type has dependencies (test results)
+        // Get the personality type data first
+        $type = $this->personalityModel->find($id);
+        if (!$type) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tipe kepribadian tidak ditemukan.');
+        }
+        
+        $combinedCode = $type['riasec_code'] . $type['mbti_code']; // Format yang digunakan di test_results
+        $testResultCount = $this->db->table('test_results')
+            ->where('personality_type', $combinedCode)
+            ->countAllResults();
+        
+        if ($testResultCount > 0) {
+            return redirect()->to('/admin/personality-types')->with('error', 'Tidak dapat menghapus tipe kepribadian karena masih digunakan dalam hasil tes.');
+        }
+        
+        // Delete major mappings first
+        $this->mappingModel->where('personality_type_id', $id)->delete();
+        
+        // Then delete the personality type
+        if ($this->personalityModel->delete($id)) {
+            return redirect()->to('/admin/personality-types')->with('success', 'Tipe kepribadian berhasil dihapus');
+        } else {
+            return redirect()->to('/admin/personality-types')->with('error', 'Gagal menghapus tipe kepribadian');
+        }
+    }
+
+    // Toggle personality type status (active/inactive)
+    public function togglePersonalityTypeStatus($id)
+    {
+        if ($this->checkAdminAccess() !== true) return $this->checkAdminAccess();
+        
+        $type = $this->personalityModel->find($id);
+        
+        if (!$type) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tipe kepribadian tidak ditemukan']);
+        }
+        
+        $currentStatus = $type['is_active'];
+        $newStatus = $currentStatus ? 0 : 1;
+        
+        if ($this->personalityModel->update($id, ['is_active' => $newStatus])) {
+            $statusText = $newStatus ? 'diaktifkan' : 'dinonaktifkan';
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tipe kepribadian berhasil ' . $statusText,
+                'new_status' => $newStatus
+            ]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal mengubah status tipe kepribadian']);
         }
     }
 } 
