@@ -9,7 +9,7 @@ class Home extends BaseController
     public function index()
     {
         // Check if user is logged in
-        $isLoggedIn = session()->get('logged_in');
+        $isLoggedIn = session()->get('isLoggedIn');
         $userData = [];
         
         // Get user data if logged in
@@ -18,6 +18,10 @@ class Home extends BaseController
             if ($userId) {
                 $userModel = new UserModel();
                 $userData = $userModel->find($userId);
+                
+                // Add session data
+                $userData['profile_picture'] = session()->get('profile_picture');
+                $userData['full_name'] = session()->get('full_name');
             }
         }
         

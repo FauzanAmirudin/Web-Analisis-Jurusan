@@ -18,10 +18,26 @@ class UserActivityModel extends Model
     ];
 
     protected bool $allowEmptyInserts = false;
-    protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $useTimestamps = false;
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        if (is_array($data) && !isset($data['created_at'])) {
+            $data['created_at'] = date('Y-m-d H:i:s');
+        }
+        
+        if (is_array($data)) {
+            if (!isset($data['ip_address']) && function_exists('service')) {
+                $request = service('request');
+                if ($request) {
+                    $data['ip_address'] = $request->getIPAddress();
+                    $data['user_agent'] = $request->getUserAgent()->__toString();
+                }
+            }
+        }
+        
+        return parent::insert($data, $returnID);
+    }
 
     public function getUserActivities($userId, $limit = 50)
     {

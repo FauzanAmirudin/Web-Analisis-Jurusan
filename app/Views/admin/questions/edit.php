@@ -57,7 +57,7 @@
                         
                         <div class="flex justify-between py-2">
                             <span class="text-sm text-gray-600">Terakhir Diperbarui</span>
-                            <span class="text-sm font-medium"><?= date('d M Y H:i', strtotime($question['updated_at'])) ?></span>
+                            <span class="text-sm font-medium"><?= isset($question['updated_at']) ? date('d M Y H:i', strtotime($question['updated_at'])) : date('d M Y H:i', strtotime($question['created_at'])) ?></span>
                         </div>
                     </div>
                 </div>
