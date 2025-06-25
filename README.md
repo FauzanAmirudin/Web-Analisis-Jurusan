@@ -1,68 +1,215 @@
-# CodeIgniter 4 Application Starter
+# 🧠 Analisis Minat - Personality Assessment System
 
-## What is CodeIgniter?
+<div align="center">
+  <img src="public/images/logo.png" alt="Analisis Minat Logo" width="200"/>
+  <br>
+  <p><i>Discover your personality type and find your perfect academic path</i></p>
+</div>
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## 📋 Table of Contents
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- [Overview](#overview)
+- [✨ Features](#-features)
+- [🛠️ Installation](#️-installation)
+- [🖥️ Usage](#️-usage)
+- [📊 Database Structure](#-database-structure)
+- [📱 Screenshots](#-screenshots)
+- [🧰 Technology Stack](#-technology-stack)
+- [⚙️ Project Structure](#️-project-structure)
+- [🔧 Configuration](#-configuration)
+- [🧪 Testing](#-testing)
+- [🚀 Deployment](#-deployment)
+- [👥 Contributing](#-contributing)
+- [📝 License](#-license)
+- [📞 Contact](#-contact)
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Overview
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+Analisis Minat is a comprehensive personality assessment system designed to help users discover their personality types and find academic majors that align with their strengths and preferences. The system provides personalized recommendations to guide educational and career choices based on scientifically validated personality assessment methods.
 
-## Installation & updates
+## ✨ Features
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+- 🔐 **User Authentication**: Secure registration and login system
+- 📝 **Personality Assessment**: In-depth personality test with scientifically validated questions
+- 📊 **Personalized Results**: Detailed analysis of personality types and traits
+- 🎓 **Major Recommendations**: Academic majors that align with the user's personality type
+- 📈 **User Dashboard**: Track test history and review previous results
+- 🖨️ **PDF Reports**: Generate and download assessment results as PDF documents
+- 👤 **User Profile Management**: Update personal information and profile pictures
+- 💼 **Admin Panel**: Comprehensive management of questions, personality types, majors, and users
+- 📱 **Responsive Design**: Fully functional across devices of various sizes
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+## 🛠️ Installation
 
-## Setup
+### Prerequisites
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+- PHP 8.1 or higher
+- Composer
+- MySQL or MariaDB
+- Web server (Apache/Nginx)
+- Required PHP extensions: intl, mbstring, json, mysqlnd, libcurl
 
-## Important Change with index.php
+### Steps
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+1. Clone the repository
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+   ```bash
+   git clone https://github.com/yourusername/Analisis-Minat-2.git
+   cd Analisis-Minat-2
+   ```
 
-**Please** read the user guide for a better explanation of how CI4 works!
+2. Install dependencies
 
-## Repository Management
+   ```bash
+   composer install
+   ```
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+3. Configure environment
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+   ```bash
+   cp env .env
+   ```
 
-## Server Requirements
+   Edit `.env` file and configure your database settings:
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+   ```
+   database.default.hostname = localhost
+   database.default.database = analisis_minat
+   database.default.username = your_username
+   database.default.password = your_password
+   ```
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+4. Run migrations and seeders
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+   ```bash
+   php spark migrate
+   php spark db:seed DatabaseSeeder
+   ```
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+5. Start the development server
+   ```bash
+   php spark serve
+   ```
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## 🖥️ Usage
+
+### User Flow
+
+1. **Register/Login**: Create an account or login to access the assessment
+2. **Take the Test**: Complete the personality assessment questionnaire
+3. **View Results**: Receive detailed personality analysis and major recommendations
+4. **Explore Majors**: Learn about recommended academic paths based on your results
+5. **Generate PDF**: Download a comprehensive report of your assessment results
+
+### Admin Flow
+
+1. **Manage Questions**: Add, edit, or remove assessment questions
+2. **Personality Types**: Configure personality types and their descriptions
+3. **Major Management**: Add or update academic majors and their associations with personality types
+4. **User Administration**: Manage user accounts and view activity logs
+
+## 📊 Database Structure
+
+The application uses a relational database with the following key tables:
+
+- `users` - User account information
+- `questions` - Assessment questions
+- `personality_types` - Different personality types and their descriptions
+- `majors` - Academic majors information
+- `test_sessions` - Records of test attempts
+- `test_answers` - User responses to questions
+- `test_results` - Analysis results linking users to personality types
+- `personality_major_mapping` - Relationships between personality types and recommended majors
+
+## 📱 Screenshots
+
+<div align="center">
+  <img src="public/images/screenshots/home.png" alt="Home" width="400"/>
+  <img src="public/images/screenshots/dashboard.png" alt="Dashboard" width="400"/>
+  <img src="public/images/screenshots/hasil.png" alt="Hasil" width="400"/>
+  <img src="public/images/screenshots/hasil-2.png" alt="Hasil" width="400"/>
+</div>
+
+## 🧰 Technology Stack
+
+- **Framework**: CodeIgniter 4
+- **Database**: MySQL/MariaDB
+- **Frontend**: HTML5, CSS3, JavaScript, Bootstrap
+- **PDF Generation**: TCPDF library
+- **Authentication**: Custom implementation with session management
+
+## ⚙️ Project Structure
+
+```
+Analisis-Minat-2/
+├── app/                      # Application source code
+│   ├── Controllers/          # Request handlers
+│   ├── Models/               # Database models
+│   ├── Views/                # UI templates
+│   ├── Libraries/            # Custom libraries (PDF generator, etc.)
+│   ├── Filters/              # Request filters (Auth, Admin)
+│   └── Database/             # Migrations and seed data
+├── public/                   # Publicly accessible files
+│   ├── images/               # Image assets
+│   ├── js/                   # JavaScript files
+│   └── uploads/              # User uploaded content
+└── writable/                 # Writable directory for logs, cache, etc.
+```
+
+## 🔧 Configuration
+
+Key configuration files:
+
+- `.env` - Environment variables (database, base URL, etc.)
+- `app/Config/App.php` - Application settings
+- `app/Config/Database.php` - Database connection settings
+- `app/Config/Routes.php` - URL routing configuration
+
+## 🧪 Testing
+
+Run the test suite using PHPUnit:
+
+```bash
+composer test
+```
+
+## 🚀 Deployment
+
+For production deployment:
+
+1. Set environment to production in `.env`:
+
+   ```
+   CI_ENVIRONMENT = production
+   ```
+
+2. Configure proper server settings:
+
+   - Point your web server to the `public` directory
+   - Ensure `writable` directory permissions are set correctly
+   - Configure proper database credentials
+
+3. Optimize for production:
+   ```bash
+   composer install --optimize-autoloader --no-dev
+   ```
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
+
+## 📞 Contact
+
+For questions or support, please contact:
+
+- Email: fauzan223360@gmail.com
+
+---
+
+<div align="center">
+  <p>Built with ❤️ by Your Team</p>
+</div>
