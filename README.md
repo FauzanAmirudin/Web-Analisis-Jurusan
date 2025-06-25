@@ -20,7 +20,6 @@
 - [🧪 Testing](#-testing)
 - [🚀 Deployment](#-deployment)
 - [👥 Contributing](#-contributing)
-- [📝 License](#-license)
 - [📞 Contact](#-contact)
 
 ## Overview
